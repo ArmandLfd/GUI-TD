@@ -1,19 +1,35 @@
 #include "Simulator.h"
 
 Simulator::Simulator(char* pathFile) {
-	this->loadFileProp(pathFile);
+	try {
+		this->loadFileProp(pathFile);
+	}
+	catch (std::invalid_argument e) {
+		throw e;
+	}
 };
 
 void Simulator::launchSim() {
-	glm::vec3 eye = this->init();
-	this->shaderOpenGL();
+	glm::vec3 eye;
+	try {
+		eye = this->init();
+		this->shaderOpenGL();
+	}
+	catch (std::runtime_error e) {
+		throw e;
+	}
 
 	for (int i = 0; i < this->LayerNum; i++) {
 		this->buildDisplay(i);
 	}
 
-	this->loadTexture();
-
+	try {
+		this->loadTexture();
+	}
+	catch (std::invalid_argument e) {
+		throw e;
+	}
+	
 	glClearColor(1.0f, 1.0f, 1.0f, 0.0);
 
 	while (!glfwWindowShouldClose(this->window))
@@ -29,8 +45,12 @@ void Simulator::launchSim() {
 
 		glUseProgram(shaderProgram);
 		for (int i = this->LayerNum-1; i >= 0; i--) {
-			//this->activeObject(i);
-			this->applyTexture(i);
+			try {
+				this->applyTexture(i);
+			}
+			catch (std::invalid_argument e) {
+				throw e;
+			}
 			this->activateShader(eye, i);
 			this->draw(i);
 		}
@@ -48,21 +68,7 @@ void Simulator::launchSim() {
 		glDeleteVertexArrays(1, VAO+i);
 		glDeleteBuffers(1, VBO+i);
 	}
-}
-
-void Simulator::activeObject(int layerHandled) {
-	// bind the Vertex Array Object first, then bind and set vertex buffer(s), and then configure vertex attributes(s).
-	glBindVertexArray(*(VAO + layerHandled));
-	glBindBuffer(GL_ARRAY_BUFFER, *(VBO + layerHandled));
-	glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, *(EBO + layerHandled));
-	const GLint posLoc = glGetAttribLocation(shaderProgram, "position");
-	glVertexAttribPointer(posLoc, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-	glEnableVertexAttribArray(posLoc);
-
-	// texture coord attribute
-	const GLint texLoc = glGetAttribLocation(shaderProgram, "texCoords");
-	glVertexAttribPointer(texLoc, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-	glEnableVertexAttribArray(texLoc);
+	this->~Simulator();
 }
 
 void Simulator::buildDisplay(int depth) {
@@ -139,7 +145,7 @@ glm::mat4 Simulator::getProjection(float fov, float ratio, float near, float far
 
 void Simulator::loadTexture(){
 	for(int i = 0; i< this->LayerNum;i++){
-		this->texImg[i] = NULL;
+		this->texImg[i] = Mat();
 		glGenTextures(1, texture+i);
 		glBindTexture(GL_TEXTURE_2D, texture[i]);
 		// GL, by default, expects rows of pixels to be padded to a multiple of 4 bytes.A 1366 wide texture with 1 byte or 3 byte wide pixels, will not be naturally 4 byte aligned.
@@ -150,12 +156,19 @@ void Simulator::loadTexture(){
 		// set texture filtering parameters
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
 		glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-		this->applyTexture(i);
+		try {
+			this->applyTexture(i);
+		}
+		catch (std::invalid_argument e) {
+			throw e;
+		}
 	}
 }
 
 void Simulator::applyTexture(int layerHandled) {
 	char* pathToLoad = this->constructStringPath(layerHandled);
+	if (!texImg[layerHandled].empty())
+		this->texImg->release();
 	texImg[layerHandled] = imread(pathToLoad);
 	if (!texImg[layerHandled].empty()) {
 		flip(texImg[layerHandled], texImg[layerHandled], 0);
@@ -166,9 +179,10 @@ void Simulator::applyTexture(int layerHandled) {
 	}
 	else {
 		//Error load
-		printf("Error: load img... ");
-		printf(pathToLoad);
-		printf("\n");
+		char errorMsg[252];
+		sprintf(errorMsg, "Impossible to load image in Simualtor: %s", pathToLoad);
+		delete(pathToLoad);
+		throw std::invalid_argument(errorMsg);
 	}
 	delete(pathToLoad);
 }
@@ -181,30 +195,46 @@ char* Simulator::constructStringPath(int layerHandled) {
 
 void Simulator::loadFileProp(char* pathFileProp) {
 	FILE* fp;
-	char s[256];
+	const int numberArgs = 9;
+	const char* listOption[] = { "MODE","VERTICAL_VIEWNUM","HORIZONTAL_VIEWNUM","LAYER_NUM","FRAME","BRIGHTNESS","ITERATION","LOAD_FILENAME","SAVE_FILENAME" };
+	char* listArgs[numberArgs];
+	for (int i = 0; i < numberArgs; i++)
+		listArgs[i] = new char[128];
 
 	fp = fopen(pathFileProp, "r");
+	if (fp == NULL) {
+		char errorMsg[252];
+		sprintf(errorMsg, "Impossible to load property file: %s.", pathFileProp);
+		throw std::invalid_argument(errorMsg);
+	}
 
-	int mode, varnum, hornum, iteration;
-	char loadfilename[128];
 	int result;
+	char argFromFile[128];
+	for (int i = 0; i < numberArgs; i++) {
+		result = fscanf(fp, "%s\t%s",argFromFile, listArgs[i]);
+		if (result < 2 || std::strcmp(argFromFile,listOption[i]) != NULL) {
+			char errorMsg[252];
+			sprintf(errorMsg, "Property file not correct: %s.", pathFileProp);
+			throw std::invalid_argument(errorMsg);
+		}
+	}
+	this->LayerNum = std::strtol(listArgs[3], NULL, 10);
+	this->Frame = std::strtol(listArgs[4], NULL, 10);
+	this->pathToLayerImg = listArgs[numberArgs - 1];
 
-	result = fscanf(fp, "%s\t%d", s, &mode);
-	result = fscanf(fp, "%s\t%d", s, &varnum);
-	result = fscanf(fp, "%s\t%d", s, &hornum);
-	result = fscanf(fp, "%s\t%d", s, &(this->LayerNum));
-	result = fscanf(fp, "%s\t%d", s, &(this->Frame));
-	result = fscanf(fp, "%s\t%lf", s, &(this->Bright));
-	result = fscanf(fp, "%s\t%d", s, &iteration);
-	result = fscanf(fp, "%s\t%s", s, loadfilename);
-	this->pathToLayerImg = new char[128];
-	result = fscanf(fp, "%s\t%s", s, this->pathToLayerImg);
+	for (int i = 0; i < numberArgs - 1; i++)
+		delete listArgs[i];
 
 	fclose(fp);
 }
 
 Simulator::~Simulator() {
-	delete pathToLayerImg;
+	delete[]pathToLayerImg;
+	delete[]VAO;
+	delete[]VBO;
+	delete[]EBO;
+	delete []texImg;
+	delete[]texture;
 }
 
 void Simulator::shaderOpenGL() {
@@ -224,8 +254,7 @@ void Simulator::shaderOpenGL() {
 	if (!success)
 	{
 		glGetShaderInfoLog(vertexShader, 512, NULL, infoLog);
-		printf("Error: shaders: ");
-		printf(infoLog);
+		throw std::runtime_error(infoLog);
 	}
 	// fragment shader
 	unsigned int fragmentShader = glCreateShader(GL_FRAGMENT_SHADER);
@@ -239,8 +268,7 @@ void Simulator::shaderOpenGL() {
 	if (!success)
 	{
 		glGetShaderInfoLog(fragmentShader, 512, NULL, infoLog);
-		printf("Error: shaders: ");
-		printf(infoLog);
+		throw std::runtime_error(infoLog);
 	}
 	// link shaders
 	shaderProgram = glCreateProgram();
@@ -251,8 +279,7 @@ void Simulator::shaderOpenGL() {
 	glGetProgramiv(shaderProgram, GL_LINK_STATUS, &success);
 	if (!success) {
 		glGetProgramInfoLog(shaderProgram, 512, NULL, infoLog);
-		printf("Error: shaders: ");
-		printf(infoLog);
+		throw std::runtime_error(infoLog);
 	}
 	glDeleteShader(vertexShader);
 	glDeleteShader(fragmentShader);
@@ -265,8 +292,7 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height)
 
 glm::vec3 Simulator::init() {
 	if (!glfwInit()) {
-		printf("Error: while init glfw...");
-		return glm::vec3();
+		throw std::runtime_error("Impossible to initialize GLFW in simultor.");
 	}
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
 	glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
@@ -275,13 +301,13 @@ glm::vec3 Simulator::init() {
 	//Launch window
 	this->window = glfwCreateWindow(winsize, winsize, "Simulation of Tensor Display", NULL, NULL);
 	if (window == NULL) {
-		return glm::vec3();
+		throw std::runtime_error("Impossible to create a GLFW window in simultor.");
 	}
 	glfwMakeContextCurrent(window);
 	//Glad
 	if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
 	{
-		return glm::vec3();
+		throw std::runtime_error("Impossible to initialize GLAD in simultor.");
 	}
 	glViewport(0, 0, winsize, winsize);
 	//Resize window when user did

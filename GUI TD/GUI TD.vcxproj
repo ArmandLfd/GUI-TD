@@ -78,8 +78,8 @@
     <LibraryPath>C:\Users\arman\Desktop\Polytech\Master-thesis\code\GUI\GUI TD\Dependecies\opencv\build\x64\vc15\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">
-    <IncludePath>C:\Users\arman\Desktop\GUI TD\Dependecies\opencv\build\include;C:\Users\arman\Desktop\GUI TD\Dependecies\glm;C:\Users\arman\Desktop\GUI TD\Dependecies\glfw-3.3.6.bin.WIN64-true\include;C:\Users\arman\Desktop\GUI TD\Dependecies\GLAD\include;C:\Users\arman\Desktop\GUI TD\Dependecies\GLAD\include;C:\Users\arman\Desktop\GUI TD\Dependecies\glm;C:\Users\arman\Desktop\GUI TD\Dependecies\opencv\build\include;$(IncludePath)</IncludePath>
-    <LibraryPath>C:\Users\arman\Desktop\GUI TD\Dependecies\glfw-3.3.6.bin.WIN64-true\lib-vc2019;C:\Users\arman\Desktop\GUI TD\Dependecies\opencv\build\x64\vc15\lib;C:\Users\arman\Desktop\GUI TD\Dependecies\opencv\build\x64\vc15\lib;$(LibraryPath)</LibraryPath>
+    <IncludePath>C:\Users\arman\Desktop\Polytech\GUI-TD\Dependecies\opencv\build\include;C:\Users\arman\Desktop\Polytech\GUI-TD\Dependecies\glm;C:\Users\arman\Desktop\Polytech\GUI-TD\Dependecies\glfw-3.3.6.bin.WIN64-true\include;C:\Users\arman\Desktop\Polytech\GUI-TD\Dependecies\GLAD\include;$(IncludePath)</IncludePath>
+    <LibraryPath>C:\Users\arman\Desktop\Polytech\GUI-TD\Dependecies\glfw-3.3.6.bin.WIN64-true\lib-vc2019;C:\Library C\OpenCV\opencv\build\x64\vc15\lib;$(LibraryPath)</LibraryPath>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|x64'">
     <IncludePath>C:\Users\arman\Desktop\GUI TD\Dependecies\opencv\build\include;C:\Users\arman\Desktop\GUI TD\Dependecies\glm;C:\Users\arman\Desktop\GUI TD\Dependecies\glfw-3.3.6.bin.WIN64-true\include;C:\Users\arman\Desktop\GUI TD\Dependecies\GLAD\include;$(VC_IncludePath);$(WindowsSDK_IncludePath);</IncludePath>

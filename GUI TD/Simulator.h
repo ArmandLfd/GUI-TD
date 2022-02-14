@@ -32,12 +32,15 @@ private:
 	glm::mat4 getProjection(float fov, float ratio, float near, float far);
 	void applyTexture(int layerHandled);
 	void draw(int layerHandled);
-	void activeObject(int layerHandled);
 
 	char* constructStringPath(int layerHandled);
 
 	glm::vec3 rotateX(glm::vec3 v, glm::vec3 origin, double angle);
 	glm::vec3 rotateY(glm::vec3 v, glm::vec3 origin, double angle);
+
+
+	GLFWwindow* window;
+	int winsize = 512;
 
 	unsigned int *texture;
 	GLint MLoc, VLoc, PLoc, texLoc = NULL;
@@ -76,14 +79,11 @@ private:
 
 	int Frame;
 	int LayerNum;
-	double Bright;
 	char* pathToLayerImg;
-	GLFWwindow* window;
-	int winsize = 512;
+	int nowFrame = 0;
 
 	double maxPitch = 160.0;
 	double maxYaw = 180;
 	double yaw = 0;
 	double pitch = 0;
-	int nowFrame = 0;
 };

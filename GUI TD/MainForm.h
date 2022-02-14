@@ -33,7 +33,8 @@ namespace GUITD {
 
 	private: System::Windows::Forms::Button^ buttonDetect;
 	private: System::Windows::Forms::Panel^ panelError;
-	private: System::Windows::Forms::Label^ labelError;
+	private: static System::Windows::Forms::Label^ labelError;
+
 	private: System::Windows::Forms::Panel^ panelInformation;
 	private: System::Windows::Forms::Label^ labelPosition;
 
@@ -63,8 +64,11 @@ namespace GUITD {
 	private: System::Windows::Forms::Button^ buttonSelectFileProp;
 	private: System::Windows::Forms::Label^ labelFilePropTitle;
 	private: System::Windows::Forms::OpenFileDialog^ openFileDialogFP;
-	private: System::Windows::Forms::Button^ buttonLaunchSim;
-	private: System::Windows::Forms::Button^ buttonStopSimulation;
+	private: static System::Windows::Forms::Button^ buttonLaunchSim;
+	private: static System::Windows::Forms::Button^ buttonStopSimulation;
+	private: System::Windows::Forms::Label^ labelErrorTitle;
+
+
 
 	private: System::Windows::Forms::Label^ labelMonitors;
 
@@ -148,8 +152,34 @@ namespace GUITD {
 
 		static void LaunchSim(Object^ pathFile) {
 			msclr::interop::marshal_context converter;
-			Simulator^ simulator = gcnew Simulator((char*)(converter.marshal_as<const char*>((System::String^) pathFile)));
-			simulator->launchSim();
+			try {
+				Simulator^ simulator = gcnew Simulator((char*)(converter.marshal_as<const char*>((System::String^)pathFile)));
+				simulator->launchSim();
+			}
+			catch (std::exception e) {
+				printErrorDelegate^ action = gcnew printErrorDelegate(&MainForm::printError);
+				MainForm::labelError->Invoke(action, gcnew array<Object^> {gcnew System::String(e.what())});
+			}
+			displayButtonLaunchSimDelegate^ actionLaunchSim = gcnew displayButtonLaunchSimDelegate(&MainForm::displayButtonLaunchSim);
+			MainForm::buttonLaunchSim->Invoke(actionLaunchSim, gcnew array<Object^> {System::Boolean(true)});
+			displayButtonStopSimDelegate^ actionStopSim = gcnew displayButtonStopSimDelegate(&MainForm::displayButtonStopSim);
+			MainForm::buttonStopSimulation->Invoke(actionStopSim, gcnew array<Object^> {System::Boolean(true)});
+		}
+
+		delegate void displayButtonLaunchSimDelegate(System::Boolean launched);
+		delegate void displayButtonStopSimDelegate(System::Boolean launched);
+		delegate void printErrorDelegate(System::String^ msg);
+
+		static void displayButtonLaunchSim(System::Boolean launched) {
+			MainForm::buttonLaunchSim->Visible = launched;
+		}
+
+		static void displayButtonStopSim(System::Boolean launched) {
+			MainForm::buttonStopSimulation->Visible = !launched;
+		}
+
+		static void printError(System::String^ msg) {
+			MainForm::labelError->Text = msg;
 		}
 
 		void InitSim(){
@@ -206,6 +236,7 @@ namespace GUITD {
 			this->textBoxFileProp = (gcnew System::Windows::Forms::TextBox());
 			this->labelSimTitle = (gcnew System::Windows::Forms::Label());
 			this->openFileDialogFP = (gcnew System::Windows::Forms::OpenFileDialog());
+			this->labelErrorTitle = (gcnew System::Windows::Forms::Label());
 			this->menuStrip->SuspendLayout();
 			this->panelHandleMonitor->SuspendLayout();
 			this->panelInformation->SuspendLayout();
@@ -450,17 +481,19 @@ namespace GUITD {
 			// 
 			// panelError
 			// 
+			this->panelError->Controls->Add(this->labelErrorTitle);
 			this->panelError->Controls->Add(this->labelError);
 			this->panelError->Location = System::Drawing::Point(12, 451);
 			this->panelError->Name = L"panelError";
-			this->panelError->Size = System::Drawing::Size(290, 20);
+			this->panelError->Size = System::Drawing::Size(290, 66);
 			this->panelError->TabIndex = 9;
+			this->panelError->Paint += gcnew System::Windows::Forms::PaintEventHandler(this, &MainForm::panelError_Paint);
 			// 
 			// labelError
 			// 
 			this->labelError->AutoSize = true;
 			this->labelError->ForeColor = System::Drawing::Color::DarkRed;
-			this->labelError->Location = System::Drawing::Point(4, 4);
+			this->labelError->Location = System::Drawing::Point(42, 4);
 			this->labelError->Name = L"labelError";
 			this->labelError->Size = System::Drawing::Size(0, 13);
 			this->labelError->TabIndex = 0;
@@ -548,7 +581,16 @@ namespace GUITD {
 			// 
 			// openFileDialogFP
 			// 
-			this->openFileDialogFP->FileName = L"openFileDialog1";
+			this->openFileDialogFP->Title = L"Chooose property file";
+			// 
+			// labelErrorTitle
+			// 
+			this->labelErrorTitle->AutoSize = true;
+			this->labelErrorTitle->Location = System::Drawing::Point(7, 4);
+			this->labelErrorTitle->Name = L"labelErrorTitle";
+			this->labelErrorTitle->Size = System::Drawing::Size(35, 13);
+			this->labelErrorTitle->TabIndex = 1;
+			this->labelErrorTitle->Text = L"Error: ";
 			// 
 			// MainForm
 			// 
@@ -629,6 +671,8 @@ private: System::Void buttonStopSimulation_Click(System::Object^ sender, System:
 	this->finishSim();
 	this->buttonLaunchSim->Visible = true;
 	this->buttonStopSimulation->Visible = false;
+}
+private: System::Void panelError_Paint(System::Object^ sender, System::Windows::Forms::PaintEventArgs^ e) {
 }
 };
 }
