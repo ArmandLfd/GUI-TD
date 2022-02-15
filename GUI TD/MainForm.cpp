@@ -10,4 +10,3 @@ void main(array<System::String^>^ args) {
 	GUITD::MainForm form;
 	Application::Run(% form);
 }
-

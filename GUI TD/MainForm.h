@@ -35,6 +35,7 @@ namespace GUITD {
 	private: System::Windows::Forms::Panel^ panelError;
 	private: static System::Windows::Forms::Label^ labelError;
 
+
 	private: System::Windows::Forms::Panel^ panelInformation;
 	private: System::Windows::Forms::Label^ labelPosition;
 
@@ -66,6 +67,8 @@ namespace GUITD {
 	private: System::Windows::Forms::OpenFileDialog^ openFileDialogFP;
 	private: static System::Windows::Forms::Button^ buttonLaunchSim;
 	private: static System::Windows::Forms::Button^ buttonStopSimulation;
+
+
 	private: System::Windows::Forms::Label^ labelErrorTitle;
 
 
@@ -128,12 +131,12 @@ namespace GUITD {
 
 		void UpdatePanelMonitor() {
 			int indexOfSelected = this->listMonitorsLabel->Items->IndexOf(this->selectedMonitor);
-			this->labelInformationTitle->Text = this->selectedMonitor->ToString();
 			if (indexOfSelected < 0 || indexOfSelected >= *nbMonitors) {
 				//Handle Error
 				this->labelError->Text = "Error: Unable to find selected Monitor.";
 				return;
 			}
+			this->labelInformationTitle->Text = this->selectedMonitor->ToString();
 			int xpos, ypos;
 			glfwGetMonitorPos(*(listMonitors + indexOfSelected), &xpos, &ypos);
 			this->textBoxPosX->Text = gcnew System::String(xpos.ToString());
@@ -226,6 +229,7 @@ namespace GUITD {
 			this->labelInformation = (gcnew System::Windows::Forms::Label());
 			this->buttonDetect = (gcnew System::Windows::Forms::Button());
 			this->panelError = (gcnew System::Windows::Forms::Panel());
+			this->labelErrorTitle = (gcnew System::Windows::Forms::Label());
 			this->labelError = (gcnew System::Windows::Forms::Label());
 			this->labelInformationTitle = (gcnew System::Windows::Forms::Label());
 			this->panelSimulator = (gcnew System::Windows::Forms::Panel());
@@ -236,7 +240,6 @@ namespace GUITD {
 			this->textBoxFileProp = (gcnew System::Windows::Forms::TextBox());
 			this->labelSimTitle = (gcnew System::Windows::Forms::Label());
 			this->openFileDialogFP = (gcnew System::Windows::Forms::OpenFileDialog());
-			this->labelErrorTitle = (gcnew System::Windows::Forms::Label());
 			this->menuStrip->SuspendLayout();
 			this->panelHandleMonitor->SuspendLayout();
 			this->panelInformation->SuspendLayout();
@@ -483,11 +486,20 @@ namespace GUITD {
 			// 
 			this->panelError->Controls->Add(this->labelErrorTitle);
 			this->panelError->Controls->Add(this->labelError);
-			this->panelError->Location = System::Drawing::Point(12, 451);
+			this->panelError->Location = System::Drawing::Point(12, 462);
 			this->panelError->Name = L"panelError";
-			this->panelError->Size = System::Drawing::Size(290, 66);
+			this->panelError->Size = System::Drawing::Size(719, 55);
 			this->panelError->TabIndex = 9;
 			this->panelError->Paint += gcnew System::Windows::Forms::PaintEventHandler(this, &MainForm::panelError_Paint);
+			// 
+			// labelErrorTitle
+			// 
+			this->labelErrorTitle->AutoSize = true;
+			this->labelErrorTitle->Location = System::Drawing::Point(7, 4);
+			this->labelErrorTitle->Name = L"labelErrorTitle";
+			this->labelErrorTitle->Size = System::Drawing::Size(35, 13);
+			this->labelErrorTitle->TabIndex = 1;
+			this->labelErrorTitle->Text = L"Error: ";
 			// 
 			// labelError
 			// 
@@ -518,13 +530,13 @@ namespace GUITD {
 			this->panelSimulator->Controls->Add(this->labelSimTitle);
 			this->panelSimulator->Location = System::Drawing::Point(11, 227);
 			this->panelSimulator->Name = L"panelSimulator";
-			this->panelSimulator->Size = System::Drawing::Size(247, 206);
+			this->panelSimulator->Size = System::Drawing::Size(247, 224);
 			this->panelSimulator->TabIndex = 11;
 			// 
 			// buttonStopSimulation
 			// 
 			this->buttonStopSimulation->BackColor = System::Drawing::Color::Brown;
-			this->buttonStopSimulation->Location = System::Drawing::Point(168, 174);
+			this->buttonStopSimulation->Location = System::Drawing::Point(168, 198);
 			this->buttonStopSimulation->Name = L"buttonStopSimulation";
 			this->buttonStopSimulation->Size = System::Drawing::Size(75, 23);
 			this->buttonStopSimulation->TabIndex = 17;
@@ -535,7 +547,7 @@ namespace GUITD {
 			// 
 			// buttonLaunchSim
 			// 
-			this->buttonLaunchSim->Location = System::Drawing::Point(8, 174);
+			this->buttonLaunchSim->Location = System::Drawing::Point(8, 198);
 			this->buttonLaunchSim->Name = L"buttonLaunchSim";
 			this->buttonLaunchSim->Size = System::Drawing::Size(75, 23);
 			this->buttonLaunchSim->TabIndex = 16;
@@ -582,15 +594,6 @@ namespace GUITD {
 			// openFileDialogFP
 			// 
 			this->openFileDialogFP->Title = L"Chooose property file";
-			// 
-			// labelErrorTitle
-			// 
-			this->labelErrorTitle->AutoSize = true;
-			this->labelErrorTitle->Location = System::Drawing::Point(7, 4);
-			this->labelErrorTitle->Name = L"labelErrorTitle";
-			this->labelErrorTitle->Size = System::Drawing::Size(35, 13);
-			this->labelErrorTitle->TabIndex = 1;
-			this->labelErrorTitle->Text = L"Error: ";
 			// 
 			// MainForm
 			// 
