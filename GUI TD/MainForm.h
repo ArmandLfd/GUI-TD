@@ -33,7 +33,9 @@ namespace GUITD {
 
 	private: System::Windows::Forms::Button^ buttonDetect;
 	private: System::Windows::Forms::Panel^ panelError;
-	private: static System::Windows::Forms::Label^ labelError;
+	private: System::Windows::Forms::Label^ labelError;
+
+
 
 
 	private: System::Windows::Forms::Panel^ panelInformation;
@@ -65,11 +67,42 @@ namespace GUITD {
 	private: System::Windows::Forms::Button^ buttonSelectFileProp;
 	private: System::Windows::Forms::Label^ labelFilePropTitle;
 	private: System::Windows::Forms::OpenFileDialog^ openFileDialogFP;
-	private: static System::Windows::Forms::Button^ buttonLaunchSim;
-	private: static System::Windows::Forms::Button^ buttonStopSimulation;
+	private: System::Windows::Forms::Button^ buttonLaunchSim;
+	private: System::Windows::Forms::Button^ buttonStopSimulation;
+
+
+
+
 
 
 	private: System::Windows::Forms::Label^ labelErrorTitle;
+	private: System::Windows::Forms::Panel^ panelDebug;
+
+
+
+
+	private: System::Windows::Forms::Panel^ panelDebugColor;
+
+
+
+	private: System::Windows::Forms::Label^ labelDebugColor;
+
+	private: System::Windows::Forms::Panel^ panelDebugPos;
+	private: System::Windows::Forms::TextBox^ textBoxDebugPosX;
+	private: System::Windows::Forms::TextBox^ textBoxDebugPosY;
+
+
+
+
+	private: System::Windows::Forms::Label^ labelDebugPos;
+
+	private: System::Windows::Forms::Label^ DebugTitle;
+	private: System::Windows::Forms::Button^ buttonStopDebug;
+	private: System::Windows::Forms::Button^ buttonLaunchDebug;
+
+	private: System::Windows::Forms::ColorDialog^ colorDialogDebug;
+	private: System::Windows::Forms::Button^ buttonDebugColor;
+
 
 
 
@@ -100,10 +133,14 @@ namespace GUITD {
 	private:
 		GLFWmonitor** listMonitors;
 		int* nbMonitors = new int();
-		System::Object^ selectedMonitor;
-		int* listLayer;
+		System::String^ selectedMonitor;
+		int* listLayer = NULL;
 		System::String^ simFile;
 		System::Threading::Thread^ simulation;
+		static System::Windows::Forms::Label^ staticLabelError;
+		static System::Windows::Forms::Button^ staticButtonLaunchSim;
+		static System::Windows::Forms::Button^ staticButtonStopSim;
+		array<System::Drawing::Color^>^ listColorDebug;
 
 		// Initialize k components with k = # of monitors
 		void InitializeComponentsWithMonitors() {
@@ -111,29 +148,40 @@ namespace GUITD {
 			this->comboBoxLayer->Items->Clear();
 			if (!glfwInit()) {
 				//Handle Error
-				this->labelError->Text = "Error: Unable to initialize GLFW.";
+				this->labelError->Text = "Unable to initialize GLFW.";
 				return;
 			}
 			this->listMonitors = glfwGetMonitors(nbMonitors);
+
+			if (listLayer != NULL)
+				delete listLayer;
 			listLayer = new int(*nbMonitors);
+
+			listColorDebug = gcnew array<System::Drawing::Color^> (*nbMonitors);
 
 			for (int i = 0; i < *nbMonitors; i++) {
 				const char* nameDisplay = glfwGetMonitorName(listMonitors[i]);
-				System::Object^ objectForList = gcnew System::String(nameDisplay);
-				this->listMonitorsLabel->Items->Add(objectForList);
+				System::Object^ nameDisplayString = System::String::Concat(gcnew array<System::String^>(3) {gcnew System::String(nameDisplay)," | ", gcnew System::String((i+1).ToString())});
+				this->listMonitorsLabel->Items->Add(nameDisplayString);
 			
 				this->comboBoxLayer->Items->Add((i-1).ToString());
 
 				listLayer[i] = NULL;
+
+				listColorDebug[i] = gcnew System::Drawing::Color();
+				listColorDebug[i]->FromName("White");
 			}
-			
+			if (*nbMonitors != 0) {
+				this->selectedMonitor = (System::String^) listMonitorsLabel->Items[0];
+				this->UpdatePanelMonitor();
+			}
 		};
 
 		void UpdatePanelMonitor() {
 			int indexOfSelected = this->listMonitorsLabel->Items->IndexOf(this->selectedMonitor);
 			if (indexOfSelected < 0 || indexOfSelected >= *nbMonitors) {
 				//Handle Error
-				this->labelError->Text = "Error: Unable to find selected Monitor.";
+				this->labelError->Text = "Unable to find selected Monitor.";
 				return;
 			}
 			this->labelInformationTitle->Text = this->selectedMonitor->ToString();
@@ -151,6 +199,8 @@ namespace GUITD {
 				this->comboBoxLayer->SelectedItem = this->comboBoxLayer->Items[listLayer[indexOfSelected]];
 			else
 				this->comboBoxLayer->SelectedItem = NULL;
+
+			this->buttonDebugColor->BackColor = *(this->listColorDebug[indexOfSelected]);
 		}
 
 		static void LaunchSim(Object^ pathFile) {
@@ -161,12 +211,12 @@ namespace GUITD {
 			}
 			catch (std::exception e) {
 				printErrorDelegate^ action = gcnew printErrorDelegate(&MainForm::printError);
-				MainForm::labelError->Invoke(action, gcnew array<Object^> {gcnew System::String(e.what())});
+				MainForm::staticLabelError->Invoke(action, gcnew array<Object^> {gcnew System::String(e.what())});
 			}
 			displayButtonLaunchSimDelegate^ actionLaunchSim = gcnew displayButtonLaunchSimDelegate(&MainForm::displayButtonLaunchSim);
-			MainForm::buttonLaunchSim->Invoke(actionLaunchSim, gcnew array<Object^> {System::Boolean(true)});
+			MainForm::staticButtonLaunchSim->Invoke(actionLaunchSim, gcnew array<Object^> {System::Boolean(true)});
 			displayButtonStopSimDelegate^ actionStopSim = gcnew displayButtonStopSimDelegate(&MainForm::displayButtonStopSim);
-			MainForm::buttonStopSimulation->Invoke(actionStopSim, gcnew array<Object^> {System::Boolean(true)});
+			MainForm::staticButtonStopSim->Invoke(actionStopSim, gcnew array<Object^> {System::Boolean(true)});
 		}
 
 		delegate void displayButtonLaunchSimDelegate(System::Boolean launched);
@@ -174,15 +224,15 @@ namespace GUITD {
 		delegate void printErrorDelegate(System::String^ msg);
 
 		static void displayButtonLaunchSim(System::Boolean launched) {
-			MainForm::buttonLaunchSim->Visible = launched;
+			MainForm::staticButtonLaunchSim->Visible = launched;
 		}
 
 		static void displayButtonStopSim(System::Boolean launched) {
-			MainForm::buttonStopSimulation->Visible = !launched;
+			MainForm::staticButtonStopSim->Visible = !launched;
 		}
 
 		static void printError(System::String^ msg) {
-			MainForm::labelError->Text = msg;
+			MainForm::staticLabelError->Text = msg;
 		}
 
 		void InitSim(){
@@ -192,6 +242,10 @@ namespace GUITD {
 
 		void finishSim() {
 			this->simulation->Abort();
+		}
+
+		void changeColorDebug() {
+			this->listColorDebug[this->listMonitorsLabel->Items->IndexOf(this->selectedMonitor)] = this->colorDialogDebug->Color;
 		}
 
 
@@ -215,6 +269,16 @@ namespace GUITD {
 			this->aboutToolStripMenuItem = (gcnew System::Windows::Forms::ToolStripMenuItem());
 			this->buttonAutoDetectMonitors = (gcnew System::Windows::Forms::Button());
 			this->panelHandleMonitor = (gcnew System::Windows::Forms::Panel());
+			this->panelDebug = (gcnew System::Windows::Forms::Panel());
+			this->buttonStopDebug = (gcnew System::Windows::Forms::Button());
+			this->buttonLaunchDebug = (gcnew System::Windows::Forms::Button());
+			this->panelDebugColor = (gcnew System::Windows::Forms::Panel());
+			this->labelDebugColor = (gcnew System::Windows::Forms::Label());
+			this->panelDebugPos = (gcnew System::Windows::Forms::Panel());
+			this->textBoxDebugPosX = (gcnew System::Windows::Forms::TextBox());
+			this->textBoxDebugPosY = (gcnew System::Windows::Forms::TextBox());
+			this->labelDebugPos = (gcnew System::Windows::Forms::Label());
+			this->DebugTitle = (gcnew System::Windows::Forms::Label());
 			this->panelInformation = (gcnew System::Windows::Forms::Panel());
 			this->panel2 = (gcnew System::Windows::Forms::Panel());
 			this->comboBoxLayer = (gcnew System::Windows::Forms::ComboBox());
@@ -240,8 +304,13 @@ namespace GUITD {
 			this->textBoxFileProp = (gcnew System::Windows::Forms::TextBox());
 			this->labelSimTitle = (gcnew System::Windows::Forms::Label());
 			this->openFileDialogFP = (gcnew System::Windows::Forms::OpenFileDialog());
+			this->colorDialogDebug = (gcnew System::Windows::Forms::ColorDialog());
+			this->buttonDebugColor = (gcnew System::Windows::Forms::Button());
 			this->menuStrip->SuspendLayout();
 			this->panelHandleMonitor->SuspendLayout();
+			this->panelDebug->SuspendLayout();
+			this->panelDebugColor->SuspendLayout();
+			this->panelDebugPos->SuspendLayout();
 			this->panelInformation->SuspendLayout();
 			this->panel2->SuspendLayout();
 			this->panel1->SuspendLayout();
@@ -356,11 +425,106 @@ namespace GUITD {
 			// 
 			this->panelHandleMonitor->Anchor = static_cast<System::Windows::Forms::AnchorStyles>(((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Left)
 				| System::Windows::Forms::AnchorStyles::Right));
+			this->panelHandleMonitor->Controls->Add(this->panelDebug);
 			this->panelHandleMonitor->Controls->Add(this->panelInformation);
 			this->panelHandleMonitor->Location = System::Drawing::Point(332, 36);
 			this->panelHandleMonitor->Name = L"panelHandleMonitor";
 			this->panelHandleMonitor->Size = System::Drawing::Size(399, 415);
 			this->panelHandleMonitor->TabIndex = 7;
+			// 
+			// panelDebug
+			// 
+			this->panelDebug->Controls->Add(this->buttonStopDebug);
+			this->panelDebug->Controls->Add(this->buttonLaunchDebug);
+			this->panelDebug->Controls->Add(this->panelDebugColor);
+			this->panelDebug->Controls->Add(this->panelDebugPos);
+			this->panelDebug->Controls->Add(this->DebugTitle);
+			this->panelDebug->Location = System::Drawing::Point(3, 108);
+			this->panelDebug->Name = L"panelDebug";
+			this->panelDebug->Size = System::Drawing::Size(393, 99);
+			this->panelDebug->TabIndex = 5;
+			// 
+			// buttonStopDebug
+			// 
+			this->buttonStopDebug->BackColor = System::Drawing::Color::DarkRed;
+			this->buttonStopDebug->Location = System::Drawing::Point(227, 56);
+			this->buttonStopDebug->Name = L"buttonStopDebug";
+			this->buttonStopDebug->Size = System::Drawing::Size(97, 25);
+			this->buttonStopDebug->TabIndex = 6;
+			this->buttonStopDebug->Text = L"Stop debug";
+			this->buttonStopDebug->UseVisualStyleBackColor = false;
+			this->buttonStopDebug->Visible = false;
+			// 
+			// buttonLaunchDebug
+			// 
+			this->buttonLaunchDebug->Location = System::Drawing::Point(227, 26);
+			this->buttonLaunchDebug->Name = L"buttonLaunchDebug";
+			this->buttonLaunchDebug->Size = System::Drawing::Size(97, 25);
+			this->buttonLaunchDebug->TabIndex = 5;
+			this->buttonLaunchDebug->Text = L"Launch debug";
+			this->buttonLaunchDebug->UseVisualStyleBackColor = true;
+			// 
+			// panelDebugColor
+			// 
+			this->panelDebugColor->Controls->Add(this->buttonDebugColor);
+			this->panelDebugColor->Controls->Add(this->labelDebugColor);
+			this->panelDebugColor->Location = System::Drawing::Point(8, 57);
+			this->panelDebugColor->Name = L"panelDebugColor";
+			this->panelDebugColor->Size = System::Drawing::Size(155, 24);
+			this->panelDebugColor->TabIndex = 4;
+			// 
+			// labelDebugColor
+			// 
+			this->labelDebugColor->AutoSize = true;
+			this->labelDebugColor->Location = System::Drawing::Point(4, 3);
+			this->labelDebugColor->Name = L"labelDebugColor";
+			this->labelDebugColor->Size = System::Drawing::Size(81, 13);
+			this->labelDebugColor->TabIndex = 1;
+			this->labelDebugColor->Text = L"Color to display:";
+			// 
+			// panelDebugPos
+			// 
+			this->panelDebugPos->Controls->Add(this->textBoxDebugPosX);
+			this->panelDebugPos->Controls->Add(this->textBoxDebugPosY);
+			this->panelDebugPos->Controls->Add(this->labelDebugPos);
+			this->panelDebugPos->Location = System::Drawing::Point(8, 27);
+			this->panelDebugPos->Name = L"panelDebugPos";
+			this->panelDebugPos->Size = System::Drawing::Size(155, 24);
+			this->panelDebugPos->TabIndex = 2;
+			// 
+			// textBoxDebugPosX
+			// 
+			this->textBoxDebugPosX->Location = System::Drawing::Point(62, 0);
+			this->textBoxDebugPosX->Name = L"textBoxDebugPosX";
+			this->textBoxDebugPosX->Size = System::Drawing::Size(37, 20);
+			this->textBoxDebugPosX->TabIndex = 3;
+			// 
+			// textBoxDebugPosY
+			// 
+			this->textBoxDebugPosY->Location = System::Drawing::Point(105, 0);
+			this->textBoxDebugPosY->Name = L"textBoxDebugPosY";
+			this->textBoxDebugPosY->Size = System::Drawing::Size(37, 20);
+			this->textBoxDebugPosY->TabIndex = 2;
+			// 
+			// labelDebugPos
+			// 
+			this->labelDebugPos->AutoSize = true;
+			this->labelDebugPos->Location = System::Drawing::Point(4, 3);
+			this->labelDebugPos->Name = L"labelDebugPos";
+			this->labelDebugPos->Size = System::Drawing::Size(50, 13);
+			this->labelDebugPos->TabIndex = 1;
+			this->labelDebugPos->Text = L"Position: ";
+			// 
+			// DebugTitle
+			// 
+			this->DebugTitle->AutoSize = true;
+			this->DebugTitle->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 12.25F));
+			this->DebugTitle->Location = System::Drawing::Point(4, 4);
+			this->DebugTitle->Name = L"DebugTitle";
+			this->DebugTitle->Size = System::Drawing::Size(58, 20);
+			this->DebugTitle->TabIndex = 0;
+			this->DebugTitle->Text = L"Debug";
+			this->DebugTitle->Click += gcnew System::EventHandler(this, &MainForm::label4_Click);
 			// 
 			// panelInformation
 			// 
@@ -595,6 +759,21 @@ namespace GUITD {
 			// 
 			this->openFileDialogFP->Title = L"Chooose property file";
 			// 
+			// colorDialogDebug
+			// 
+			this->colorDialogDebug->AnyColor = true;
+			// 
+			// buttonDebugColor
+			// 
+			this->buttonDebugColor->BackColor = System::Drawing::Color::White;
+			this->buttonDebugColor->ForeColor = System::Drawing::SystemColors::ActiveCaptionText;
+			this->buttonDebugColor->Location = System::Drawing::Point(88, 1);
+			this->buttonDebugColor->Name = L"buttonDebugColor";
+			this->buttonDebugColor->Size = System::Drawing::Size(64, 23);
+			this->buttonDebugColor->TabIndex = 4;
+			this->buttonDebugColor->UseVisualStyleBackColor = false;
+			this->buttonDebugColor->Click += gcnew System::EventHandler(this, &MainForm::buttonDebugColor_Click);
+			// 
 			// MainForm
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
@@ -616,6 +795,12 @@ namespace GUITD {
 			this->menuStrip->ResumeLayout(false);
 			this->menuStrip->PerformLayout();
 			this->panelHandleMonitor->ResumeLayout(false);
+			this->panelDebug->ResumeLayout(false);
+			this->panelDebug->PerformLayout();
+			this->panelDebugColor->ResumeLayout(false);
+			this->panelDebugColor->PerformLayout();
+			this->panelDebugPos->ResumeLayout(false);
+			this->panelDebugPos->PerformLayout();
 			this->panelInformation->ResumeLayout(false);
 			this->panelInformation->PerformLayout();
 			this->panel2->ResumeLayout(false);
@@ -634,6 +819,9 @@ namespace GUITD {
 		}
 #pragma endregion
 	private: System::Void MainForm_Load(System::Object^ sender, System::EventArgs^ e) {
+		this->staticButtonLaunchSim = this->buttonLaunchSim;
+		this->staticButtonStopSim = this->buttonStopSimulation;
+		this->staticLabelError = this->labelError;
 		this->InitializeComponentsWithMonitors();
 	}
 	private: System::Void label1_Click(System::Object^ sender, System::EventArgs^ e) {
@@ -645,8 +833,10 @@ private: System::Void buttonAutoDetectMonitors_Click(System::Object^ sender, Sys
 	
 }
 private: System::Void listMonitors_SelectedIndexChanged(System::Object^ sender, System::EventArgs^ e) {
-	this->selectedMonitor = this->listMonitorsLabel->SelectedItem;
-	this->UpdatePanelMonitor();
+	if (this->listMonitorsLabel->SelectedItem != nullptr) {
+		this->selectedMonitor = (System::String^)this->listMonitorsLabel->SelectedItem;
+		this->UpdatePanelMonitor();
+	}
 }
 private: System::Void buttonDetect_Click(System::Object^ sender, System::EventArgs^ e) {
 	this->InitializeComponentsWithMonitors();
@@ -655,8 +845,7 @@ private: System::Void textBoxPosX_TextChanged(System::Object^ sender, System::Ev
 
 }
 private: System::Void comboBoxLayer_SelectedIndexChanged(System::Object^ sender, System::EventArgs^ e) {
-	//TODO: change le numéro de layer quand l'user sélectionne
-	//listLayer[this->listMonitorsLabel->Items->IndexOf(this->selectedMonitor)] = comboBoxLayer->SelectedItem->;
+	listLayer[this->listMonitorsLabel->Items->IndexOf(this->selectedMonitor)] = System::Convert::ToInt32(comboBoxLayer->SelectedItem);
 }
 private: System::Void buttonSelectFileProp_Click(System::Object^ sender, System::EventArgs^ e) {
 	System::Windows::Forms::DialogResult result = this->openFileDialogFP->ShowDialog();
@@ -676,6 +865,17 @@ private: System::Void buttonStopSimulation_Click(System::Object^ sender, System:
 	this->buttonStopSimulation->Visible = false;
 }
 private: System::Void panelError_Paint(System::Object^ sender, System::Windows::Forms::PaintEventArgs^ e) {
+}
+private: System::Void label4_Click(System::Object^ sender, System::EventArgs^ e) {
+}
+private: System::Void buttonDebugColor_Click(System::Object^ sender, System::EventArgs^ e) {
+	System::Windows::Forms::DialogResult result = this->colorDialogDebug->ShowDialog();
+	if (result == System::Windows::Forms::DialogResult::OK) {
+		this->buttonDebugColor->BackColor = this->colorDialogDebug->Color;
+		if (this->selectedMonitor != nullptr) {
+			this->changeColorDebug();
+		}
+	}
 }
 };
 }

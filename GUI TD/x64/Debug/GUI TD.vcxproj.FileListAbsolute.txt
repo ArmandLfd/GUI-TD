@@ -1,0 +1,3 @@
+C:\Users\arman\Desktop\Polytech\GUI-TD\GUI TD\x64\Debug\GUI TD.vcxproj.AssemblyReference.cache
+C:\Users\arman\Desktop\Polytech\GUI-TD\GUI TD\x64\Debug\GUITD.MainForm.resources
+C:\Users\arman\Desktop\Polytech\GUI-TD\GUI TD\x64\Debug\GUI TD.vcxproj.GenerateResource.cache
