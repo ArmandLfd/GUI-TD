@@ -10,7 +10,6 @@
 #include <opencv2/imgproc.hpp>
 #include <glm/gtc/matrix_transform.hpp>
 
-
 using namespace cv;
 
 ref class Simulator

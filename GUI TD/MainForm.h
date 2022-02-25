@@ -2,6 +2,7 @@
 
 #include <msclr/marshal.h>
 #include "Simulator.h"
+#include "Visualizator.h"
 
 
 namespace GUITD {
@@ -136,10 +137,9 @@ namespace GUITD {
 		System::String^ selectedMonitor;
 		int* listLayer = NULL;
 		System::String^ simFile;
-		System::Threading::Thread^ simulation;
+		System::Threading::Thread^ simulation, ^visualizator;
 		static System::Windows::Forms::Label^ staticLabelError;
-		static System::Windows::Forms::Button^ staticButtonLaunchSim;
-		static System::Windows::Forms::Button^ staticButtonStopSim;
+		static System::Windows::Forms::Button^ staticButtonLaunchSim, ^staticButtonStopSim,^staticButtonLaunchDebug,^staticButtonStopDebug;
 		array<System::Drawing::Color^>^ listColorDebug;
 
 		// Initialize k components with k = # of monitors
@@ -155,7 +155,7 @@ namespace GUITD {
 
 			if (listLayer != NULL)
 				delete listLayer;
-			listLayer = new int(*nbMonitors);
+			listLayer = new int[*nbMonitors];
 
 			listColorDebug = gcnew array<System::Drawing::Color^> (*nbMonitors);
 
@@ -166,7 +166,7 @@ namespace GUITD {
 			
 				this->comboBoxLayer->Items->Add((i-1).ToString());
 
-				listLayer[i] = NULL;
+				listLayer[i] = i-1;
 
 				listColorDebug[i] = gcnew System::Drawing::Color();
 				listColorDebug[i]->FromName("White");
@@ -196,11 +196,45 @@ namespace GUITD {
 				this->textBoxPrimaryMonitor->Text = "False";
 			}
 			if (listLayer[indexOfSelected] != NULL)
-				this->comboBoxLayer->SelectedItem = this->comboBoxLayer->Items[listLayer[indexOfSelected]];
+				this->comboBoxLayer->SelectedItem = this->comboBoxLayer->Items->IndexOf(listLayer[indexOfSelected].ToString());
 			else
 				this->comboBoxLayer->SelectedItem = NULL;
 
 			this->buttonDebugColor->BackColor = *(this->listColorDebug[indexOfSelected]);
+		}
+
+		static void launchDebugMode(Object^ listParams) {
+			msclr::interop::marshal_context converter;
+			try {
+				array<Object^>^ tmpList = (array<Object^>^) listParams;
+				int nbMonitor = (int) tmpList[0];
+				GLFWmonitor** listMonitors = new GLFWmonitor*[nbMonitor];
+				for (int i = 0; i < nbMonitor; i++)
+					listMonitors[i] = ((array<GLFWmonitor*>^) tmpList[1])[i];
+				bool isDebuggingMode = (bool)tmpList[2];
+				char* path = (char*) converter.marshal_as<const char*>((System::String^)tmpList[3]);
+				array<Color^>^ listColor = (array<Color^>^) tmpList[4];
+				double** listColor_ptr = new double*[nbMonitor];
+				for (int i = 0; i < nbMonitor; i++) {
+					listColor_ptr[i] = new double[3];
+					listColor_ptr[i][0] = listColor[i]->R;
+					listColor_ptr[i][1] = listColor[i]->G;
+					listColor_ptr[i][2] = listColor[i]->B;
+				}
+
+				Visualizator* vis = new Visualizator(nbMonitor,listMonitors,isDebuggingMode,path,listColor_ptr);
+				vis->launchSim();
+				delete[] listMonitors;
+				delete[] listColor_ptr;
+			}
+			catch (std::exception e) {
+				printErrorDelegate^ action = gcnew printErrorDelegate(&MainForm::printError);
+				MainForm::staticLabelError->Invoke(action, gcnew array<Object^> {gcnew System::String(e.what())});
+			}
+			displayButtonLaunchDebugDelegate^ actionLaunchDebug = gcnew displayButtonLaunchDebugDelegate(&MainForm::displayButtonLaunchVis);
+			MainForm::staticButtonLaunchDebug->Invoke(actionLaunchDebug, gcnew array<Object^> {System::Boolean(true)});
+			displayButtonStopDebugDelegate^ actionStopDebug = gcnew displayButtonStopDebugDelegate(&MainForm::displayButtonStopVis);
+			MainForm::staticButtonStopDebug->Invoke(actionStopDebug, gcnew array<Object^> {System::Boolean(true)});
 		}
 
 		static void LaunchSim(Object^ pathFile) {
@@ -219,6 +253,8 @@ namespace GUITD {
 			MainForm::staticButtonStopSim->Invoke(actionStopSim, gcnew array<Object^> {System::Boolean(true)});
 		}
 
+		delegate void displayButtonLaunchDebugDelegate(System::Boolean launched);
+		delegate void displayButtonStopDebugDelegate(System::Boolean launched);
 		delegate void displayButtonLaunchSimDelegate(System::Boolean launched);
 		delegate void displayButtonStopSimDelegate(System::Boolean launched);
 		delegate void printErrorDelegate(System::String^ msg);
@@ -231,6 +267,14 @@ namespace GUITD {
 			MainForm::staticButtonStopSim->Visible = !launched;
 		}
 
+		static void displayButtonLaunchVis(System::Boolean launched) {
+			MainForm::staticButtonLaunchDebug->Visible = launched;
+		}
+
+		static void displayButtonStopVis(System::Boolean launched) {
+			MainForm::staticButtonStopDebug->Visible = !launched;
+		}
+
 		static void printError(System::String^ msg) {
 			MainForm::staticLabelError->Text = msg;
 		}
@@ -240,8 +284,26 @@ namespace GUITD {
 			this->simulation->Start(this->textBoxFileProp->Text);
 		}
 
+		void initDebugMode() {
+			if (*(nbMonitors) - 1 <= 0)
+				throw std::runtime_error("Impossible to launch a debug visualizator if there is only one monitor...");
+
+			array<GLFWmonitor*>^ correctListMonitor = gcnew array<GLFWmonitor*>(*(nbMonitors)-1);
+			for (int i = 0; i = *nbMonitors; i++) {
+				if (this->listLayer[i] != -1)
+					correctListMonitor[this->listLayer[i]] = this->listMonitors[i];
+			}
+			array<Object^>^ listParams = gcnew array<Object^>{*(nbMonitors)-1, correctListMonitor, true, " ", listColorDebug};
+			this->visualizator = gcnew System::Threading::Thread(gcnew System::Threading::ParameterizedThreadStart(&MainForm::launchDebugMode));
+			this->visualizator->Start(listParams);
+		}
+
 		void finishSim() {
 			this->simulation->Abort();
+		}
+
+		void finishDebug() {
+			this->visualizator->Abort();
 		}
 
 		void changeColorDebug() {
@@ -273,6 +335,7 @@ namespace GUITD {
 			this->buttonStopDebug = (gcnew System::Windows::Forms::Button());
 			this->buttonLaunchDebug = (gcnew System::Windows::Forms::Button());
 			this->panelDebugColor = (gcnew System::Windows::Forms::Panel());
+			this->buttonDebugColor = (gcnew System::Windows::Forms::Button());
 			this->labelDebugColor = (gcnew System::Windows::Forms::Label());
 			this->panelDebugPos = (gcnew System::Windows::Forms::Panel());
 			this->textBoxDebugPosX = (gcnew System::Windows::Forms::TextBox());
@@ -305,7 +368,6 @@ namespace GUITD {
 			this->labelSimTitle = (gcnew System::Windows::Forms::Label());
 			this->openFileDialogFP = (gcnew System::Windows::Forms::OpenFileDialog());
 			this->colorDialogDebug = (gcnew System::Windows::Forms::ColorDialog());
-			this->buttonDebugColor = (gcnew System::Windows::Forms::Button());
 			this->menuStrip->SuspendLayout();
 			this->panelHandleMonitor->SuspendLayout();
 			this->panelDebug->SuspendLayout();
@@ -454,6 +516,7 @@ namespace GUITD {
 			this->buttonStopDebug->Text = L"Stop debug";
 			this->buttonStopDebug->UseVisualStyleBackColor = false;
 			this->buttonStopDebug->Visible = false;
+			this->buttonStopDebug->Click += gcnew System::EventHandler(this, &MainForm::buttonStopDebug_Click);
 			// 
 			// buttonLaunchDebug
 			// 
@@ -463,6 +526,7 @@ namespace GUITD {
 			this->buttonLaunchDebug->TabIndex = 5;
 			this->buttonLaunchDebug->Text = L"Launch debug";
 			this->buttonLaunchDebug->UseVisualStyleBackColor = true;
+			this->buttonLaunchDebug->Click += gcnew System::EventHandler(this, &MainForm::buttonLaunchDebug_Click);
 			// 
 			// panelDebugColor
 			// 
@@ -472,6 +536,17 @@ namespace GUITD {
 			this->panelDebugColor->Name = L"panelDebugColor";
 			this->panelDebugColor->Size = System::Drawing::Size(155, 24);
 			this->panelDebugColor->TabIndex = 4;
+			// 
+			// buttonDebugColor
+			// 
+			this->buttonDebugColor->BackColor = System::Drawing::Color::White;
+			this->buttonDebugColor->ForeColor = System::Drawing::SystemColors::ActiveCaptionText;
+			this->buttonDebugColor->Location = System::Drawing::Point(88, 1);
+			this->buttonDebugColor->Name = L"buttonDebugColor";
+			this->buttonDebugColor->Size = System::Drawing::Size(64, 23);
+			this->buttonDebugColor->TabIndex = 4;
+			this->buttonDebugColor->UseVisualStyleBackColor = false;
+			this->buttonDebugColor->Click += gcnew System::EventHandler(this, &MainForm::buttonDebugColor_Click);
 			// 
 			// labelDebugColor
 			// 
@@ -763,17 +838,6 @@ namespace GUITD {
 			// 
 			this->colorDialogDebug->AnyColor = true;
 			// 
-			// buttonDebugColor
-			// 
-			this->buttonDebugColor->BackColor = System::Drawing::Color::White;
-			this->buttonDebugColor->ForeColor = System::Drawing::SystemColors::ActiveCaptionText;
-			this->buttonDebugColor->Location = System::Drawing::Point(88, 1);
-			this->buttonDebugColor->Name = L"buttonDebugColor";
-			this->buttonDebugColor->Size = System::Drawing::Size(64, 23);
-			this->buttonDebugColor->TabIndex = 4;
-			this->buttonDebugColor->UseVisualStyleBackColor = false;
-			this->buttonDebugColor->Click += gcnew System::EventHandler(this, &MainForm::buttonDebugColor_Click);
-			// 
 			// MainForm
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
@@ -821,6 +885,8 @@ namespace GUITD {
 	private: System::Void MainForm_Load(System::Object^ sender, System::EventArgs^ e) {
 		this->staticButtonLaunchSim = this->buttonLaunchSim;
 		this->staticButtonStopSim = this->buttonStopSimulation;
+		this->staticButtonLaunchDebug = this->buttonLaunchDebug;
+		this->staticButtonStopDebug = this->buttonStopDebug;
 		this->staticLabelError = this->labelError;
 		this->InitializeComponentsWithMonitors();
 	}
@@ -876,6 +942,16 @@ private: System::Void buttonDebugColor_Click(System::Object^ sender, System::Eve
 			this->changeColorDebug();
 		}
 	}
+}
+private: System::Void buttonLaunchDebug_Click(System::Object^ sender, System::EventArgs^ e) {
+	this->initDebugMode();
+	this->buttonLaunchDebug->Visible = false;
+	this->buttonStopDebug->Visible = false;
+}
+private: System::Void buttonStopDebug_Click(System::Object^ sender, System::EventArgs^ e) {
+	this->finishDebug();
+	this->buttonLaunchSim->Visible = true;
+	this->buttonStopSimulation->Visible = false;
 }
 };
 }
