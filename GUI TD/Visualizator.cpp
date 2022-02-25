@@ -208,11 +208,14 @@ Visualizator::~Visualizator() {
 void Visualizator::activateShader(int nbMonitor) {
 	if (texLoc == NULL) {
 		texLoc = glGetUniformLocation(this->shaderProgram[nbMonitor], "tex");
+		rmAddLoc = glGetUniformLocation(this->shaderProgram[nbMonitor], "removeAdditive");
 	}
 	//Texture
 	glUniform1i(texLoc, 0);
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, texture[nbMonitor]);
+	//RemoveAdditive
+	glUniform1f(rmAddLoc, (GLfloat)this->nbMonitors);
 }
 
 void Visualizator::draw(int nbMonitor) {

@@ -154,7 +154,7 @@ namespace GUITD {
 			this->listMonitors = glfwGetMonitors(nbMonitors);
 
 			if (listLayer != NULL)
-				delete listLayer;
+				delete[] listLayer;
 			listLayer = new int[*nbMonitors];
 
 			listColorDebug = gcnew array<System::Drawing::Color^> (*nbMonitors);
@@ -163,10 +163,15 @@ namespace GUITD {
 				const char* nameDisplay = glfwGetMonitorName(listMonitors[i]);
 				System::Object^ nameDisplayString = System::String::Concat(gcnew array<System::String^>(3) {gcnew System::String(nameDisplay)," | ", gcnew System::String((i+1).ToString())});
 				this->listMonitorsLabel->Items->Add(nameDisplayString);
-			
-				this->comboBoxLayer->Items->Add((i-1).ToString());
-
-				listLayer[i] = i-1;
+				
+				if (listMonitors[i] == glfwGetPrimaryMonitor()) {
+					this->comboBoxLayer->Items->Add((-1).ToString());
+					listLayer[i] = -1;
+				}
+				else {
+					this->comboBoxLayer->Items->Add((i).ToString());
+					listLayer[i] = i;
+				}
 
 				listColorDebug[i] = gcnew System::Drawing::Color();
 				listColorDebug[i]->FromName("White");
@@ -196,7 +201,7 @@ namespace GUITD {
 				this->textBoxPrimaryMonitor->Text = "False";
 			}
 			if (listLayer[indexOfSelected] != NULL)
-				this->comboBoxLayer->SelectedItem = this->comboBoxLayer->Items->IndexOf(listLayer[indexOfSelected].ToString());
+				this->comboBoxLayer->SelectedItem = this->comboBoxLayer->Items[this->comboBoxLayer->Items->IndexOf(listLayer[indexOfSelected].ToString())];
 			else
 				this->comboBoxLayer->SelectedItem = NULL;
 
@@ -289,11 +294,14 @@ namespace GUITD {
 				throw std::runtime_error("Impossible to launch a debug visualizator if there is only one monitor...");
 
 			array<GLFWmonitor*>^ correctListMonitor = gcnew array<GLFWmonitor*>(*(nbMonitors)-1);
-			for (int i = 0; i = *nbMonitors; i++) {
-				if (this->listLayer[i] != -1)
-					correctListMonitor[this->listLayer[i]] = this->listMonitors[i];
+			array<Color^>^ correctListColor = gcnew array<Color^>(*(nbMonitors)-1);
+			for (int i = 0; i < *nbMonitors; i++) {
+				if (this->listLayer[i] != -1) {
+					correctListMonitor[this->listLayer[i] - 1] = this->listMonitors[i];
+					correctListColor[this->listLayer[i] - 1] = this->listColorDebug[i];
+				}
 			}
-			array<Object^>^ listParams = gcnew array<Object^>{*(nbMonitors)-1, correctListMonitor, true, " ", listColorDebug};
+			array<Object^>^ listParams = gcnew array<Object^>{*(nbMonitors)-1, correctListMonitor, true, " ", correctListColor};
 			this->visualizator = gcnew System::Threading::Thread(gcnew System::Threading::ParameterizedThreadStart(&MainForm::launchDebugMode));
 			this->visualizator->Start(listParams);
 		}
@@ -946,12 +954,12 @@ private: System::Void buttonDebugColor_Click(System::Object^ sender, System::Eve
 private: System::Void buttonLaunchDebug_Click(System::Object^ sender, System::EventArgs^ e) {
 	this->initDebugMode();
 	this->buttonLaunchDebug->Visible = false;
-	this->buttonStopDebug->Visible = false;
+	this->buttonStopDebug->Visible = true;
 }
 private: System::Void buttonStopDebug_Click(System::Object^ sender, System::EventArgs^ e) {
 	this->finishDebug();
-	this->buttonLaunchSim->Visible = true;
-	this->buttonStopSimulation->Visible = false;
+	this->buttonLaunchDebug->Visible = true;
+	this->buttonStopDebug->Visible = false;
 }
 };
 }

@@ -68,6 +68,7 @@ void Simulator::launchSim() {
 		glDeleteVertexArrays(1, VAO+i);
 		glDeleteBuffers(1, VBO+i);
 	}
+	glfwDestroyWindow(this->window);
 	this->~Simulator();
 }
 

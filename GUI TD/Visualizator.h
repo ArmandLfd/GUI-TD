@@ -45,7 +45,7 @@ private:
 	char* pathToLayerImg;
 	int nowFrame = 0;
 
-	GLint texLoc = NULL;
+	GLint texLoc, rmAddLoc = NULL;
 	unsigned int* texture;
 	Mat* texImg;
 	unsigned int* VBO, * VAO, * EBO;
@@ -66,8 +66,9 @@ private:
 		"uniform sampler2D tex;\n"
 		"out vec4 FragColor;\n"
 		"in vec2 textCoords;\n"
+		"uniform float removeAdditive;"
 		"void main()\n"
 		"{\n"
-		"	FragColor = texture(tex, textCoords);\n"
+		"	FragColor = (1.0/removeAdditive)*texture(tex, textCoords);\n"
 		"}\n\0";
 };
