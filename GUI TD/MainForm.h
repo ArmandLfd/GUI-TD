@@ -103,6 +103,25 @@ namespace GUITD {
 
 	private: System::Windows::Forms::ColorDialog^ colorDialogDebug;
 	private: System::Windows::Forms::Button^ buttonDebugColor;
+	private: System::Windows::Forms::Panel^ panelVis;
+	private: System::Windows::Forms::Button^ buttonStopVis;
+
+
+	private: System::Windows::Forms::Button^ buttonLaunchVis;
+
+	private: System::Windows::Forms::Panel^ panelFilePropVis;
+	private: System::Windows::Forms::Button^ buttonFilePropVis;
+
+
+	private: System::Windows::Forms::Label^ labelFilePropVis;
+
+
+
+
+
+	private: System::Windows::Forms::Label^ labelVisualizator;
+	private: System::Windows::Forms::TextBox^ textBoxFilePropVis;
+
 
 
 
@@ -136,10 +155,9 @@ namespace GUITD {
 		int* nbMonitors = new int();
 		System::String^ selectedMonitor;
 		int* listLayer = NULL;
-		System::String^ simFile;
-		System::Threading::Thread^ simulation, ^visualizator;
+		System::Threading::Thread^ simulation, ^visualizator, ^debugVis;
 		static System::Windows::Forms::Label^ staticLabelError;
-		static System::Windows::Forms::Button^ staticButtonLaunchSim, ^staticButtonStopSim,^staticButtonLaunchDebug,^staticButtonStopDebug;
+		static System::Windows::Forms::Button^ staticButtonLaunchSim, ^staticButtonStopSim,^staticButtonLaunchDebug,^staticButtonStopDebug,^staticButtonLaunchVis, ^staticButtonStopVis;
 		array<System::Drawing::Color^>^ listColorDebug;
 
 		// Initialize k components with k = # of monitors
@@ -208,6 +226,34 @@ namespace GUITD {
 			this->buttonDebugColor->BackColor = *(this->listColorDebug[indexOfSelected]);
 		}
 
+		static void launchVisMode(Object^ listParams) {
+			msclr::interop::marshal_context converter;
+			try {
+				array<Object^>^ tmpList = (array<Object^>^) listParams;
+				int nbMonitor = (int)tmpList[0];
+				GLFWmonitor** listMonitors = new GLFWmonitor * [nbMonitor];
+				for (int i = 0; i < nbMonitor; i++)
+					listMonitors[i] = ((array<GLFWmonitor*>^) tmpList[1])[i];
+				bool isDebuggingMode = (bool)tmpList[2];
+				char* path = (char*)converter.marshal_as<const char*>((System::String^)tmpList[3]);
+				//array<Color^>^ listColor = (array<Color^>^) tmpList[4]; //No need here
+				double** listColor_ptr = NULL;
+
+				Visualizator* vis = new Visualizator(nbMonitor, listMonitors, isDebuggingMode, path, listColor_ptr);
+				vis->launchSim();
+				delete[] listMonitors;
+				delete[] listColor_ptr;
+			}
+			catch (std::exception e) {
+				printErrorDelegate^ action = gcnew printErrorDelegate(&MainForm::printError);
+				MainForm::staticLabelError->Invoke(action, gcnew array<Object^> {gcnew System::String(e.what())});
+			}
+			displayButtonLaunchVisDelegate^ actionLaunchVis = gcnew displayButtonLaunchVisDelegate(&MainForm::displayButtonLaunchVis);
+			MainForm::staticButtonLaunchVis->Invoke(actionLaunchVis, gcnew array<Object^> {System::Boolean(true)});
+			displayButtonStopVisDelegate^ actionStopVis = gcnew displayButtonStopVisDelegate(&MainForm::displayButtonStopVis);
+			MainForm::staticButtonStopVis->Invoke(actionStopVis, gcnew array<Object^> {System::Boolean(true)});
+		}
+
 		static void launchDebugMode(Object^ listParams) {
 			msclr::interop::marshal_context converter;
 			try {
@@ -258,6 +304,8 @@ namespace GUITD {
 			MainForm::staticButtonStopSim->Invoke(actionStopSim, gcnew array<Object^> {System::Boolean(true)});
 		}
 
+		delegate void displayButtonLaunchVisDelegate(System::Boolean launched);
+		delegate void displayButtonStopVisDelegate(System::Boolean launched);
 		delegate void displayButtonLaunchDebugDelegate(System::Boolean launched);
 		delegate void displayButtonStopDebugDelegate(System::Boolean launched);
 		delegate void displayButtonLaunchSimDelegate(System::Boolean launched);
@@ -273,15 +321,38 @@ namespace GUITD {
 		}
 
 		static void displayButtonLaunchVis(System::Boolean launched) {
-			MainForm::staticButtonLaunchDebug->Visible = launched;
+			MainForm::staticButtonLaunchVis->Visible = launched;
 		}
 
 		static void displayButtonStopVis(System::Boolean launched) {
+			MainForm::staticButtonStopVis->Visible = !launched;
+		}
+
+		static void displayButtonLaunchDebug(System::Boolean launched) {
+			MainForm::staticButtonLaunchDebug->Visible = launched;
+		}
+
+		static void displayButtonStopDebug(System::Boolean launched) {
 			MainForm::staticButtonStopDebug->Visible = !launched;
 		}
 
 		static void printError(System::String^ msg) {
 			MainForm::staticLabelError->Text = msg;
+		}
+
+		void initVisMode() {
+			if (*(nbMonitors)-1 <= 0)
+				throw std::runtime_error("Impossible to launch a debug visualizator if there is only one monitor...");
+
+			array<GLFWmonitor*>^ correctListMonitor = gcnew array<GLFWmonitor*>(*(nbMonitors)-1);
+			for (int i = 0; i < *nbMonitors; i++) {
+				if (this->listLayer[i] != -1) {
+					correctListMonitor[this->listLayer[i] - 1] = this->listMonitors[i];
+				}
+			}
+			array<Object^>^ listParams = gcnew array<Object^>{*(nbMonitors)-1, correctListMonitor, false, this->textBoxFilePropVis->Text, gcnew array<Color^>{}};
+			this->visualizator = gcnew System::Threading::Thread(gcnew System::Threading::ParameterizedThreadStart(&MainForm::launchVisMode));
+			this->visualizator->Start(listParams);
 		}
 
 		void InitSim(){
@@ -302,16 +373,20 @@ namespace GUITD {
 				}
 			}
 			array<Object^>^ listParams = gcnew array<Object^>{*(nbMonitors)-1, correctListMonitor, true, " ", correctListColor};
-			this->visualizator = gcnew System::Threading::Thread(gcnew System::Threading::ParameterizedThreadStart(&MainForm::launchDebugMode));
-			this->visualizator->Start(listParams);
+			this->debugVis = gcnew System::Threading::Thread(gcnew System::Threading::ParameterizedThreadStart(&MainForm::launchDebugMode));
+			this->debugVis->Start(listParams);
 		}
 
 		void finishSim() {
 			this->simulation->Abort();
 		}
 
-		void finishDebug() {
+		void finishVis() {
 			this->visualizator->Abort();
+		}
+
+		void finishDebug() {
+			this->debugVis->Abort();
 		}
 
 		void changeColorDebug() {
@@ -350,6 +425,7 @@ namespace GUITD {
 			this->textBoxDebugPosY = (gcnew System::Windows::Forms::TextBox());
 			this->labelDebugPos = (gcnew System::Windows::Forms::Label());
 			this->DebugTitle = (gcnew System::Windows::Forms::Label());
+			this->labelInformationTitle = (gcnew System::Windows::Forms::Label());
 			this->panelInformation = (gcnew System::Windows::Forms::Panel());
 			this->panel2 = (gcnew System::Windows::Forms::Panel());
 			this->comboBoxLayer = (gcnew System::Windows::Forms::ComboBox());
@@ -366,7 +442,6 @@ namespace GUITD {
 			this->panelError = (gcnew System::Windows::Forms::Panel());
 			this->labelErrorTitle = (gcnew System::Windows::Forms::Label());
 			this->labelError = (gcnew System::Windows::Forms::Label());
-			this->labelInformationTitle = (gcnew System::Windows::Forms::Label());
 			this->panelSimulator = (gcnew System::Windows::Forms::Panel());
 			this->buttonStopSimulation = (gcnew System::Windows::Forms::Button());
 			this->buttonLaunchSim = (gcnew System::Windows::Forms::Button());
@@ -376,6 +451,14 @@ namespace GUITD {
 			this->labelSimTitle = (gcnew System::Windows::Forms::Label());
 			this->openFileDialogFP = (gcnew System::Windows::Forms::OpenFileDialog());
 			this->colorDialogDebug = (gcnew System::Windows::Forms::ColorDialog());
+			this->panelVis = (gcnew System::Windows::Forms::Panel());
+			this->buttonStopVis = (gcnew System::Windows::Forms::Button());
+			this->buttonLaunchVis = (gcnew System::Windows::Forms::Button());
+			this->panelFilePropVis = (gcnew System::Windows::Forms::Panel());
+			this->textBoxFilePropVis = (gcnew System::Windows::Forms::TextBox());
+			this->buttonFilePropVis = (gcnew System::Windows::Forms::Button());
+			this->labelFilePropVis = (gcnew System::Windows::Forms::Label());
+			this->labelVisualizator = (gcnew System::Windows::Forms::Label());
 			this->menuStrip->SuspendLayout();
 			this->panelHandleMonitor->SuspendLayout();
 			this->panelDebug->SuspendLayout();
@@ -387,6 +470,8 @@ namespace GUITD {
 			this->panelPosition->SuspendLayout();
 			this->panelError->SuspendLayout();
 			this->panelSimulator->SuspendLayout();
+			this->panelVis->SuspendLayout();
+			this->panelFilePropVis->SuspendLayout();
 			this->SuspendLayout();
 			// 
 			// listMonitorsLabel
@@ -395,7 +480,7 @@ namespace GUITD {
 			this->listMonitorsLabel->Items->AddRange(gcnew cli::array< System::Object^  >(2) { L"Item1", L"Item2" });
 			this->listMonitorsLabel->Location = System::Drawing::Point(12, 55);
 			this->listMonitorsLabel->Name = L"listMonitorsLabel";
-			this->listMonitorsLabel->Size = System::Drawing::Size(247, 108);
+			this->listMonitorsLabel->Size = System::Drawing::Size(314, 108);
 			this->listMonitorsLabel->TabIndex = 2;
 			this->listMonitorsLabel->SelectedIndexChanged += gcnew System::EventHandler(this, &MainForm::listMonitors_SelectedIndexChanged);
 			// 
@@ -483,9 +568,9 @@ namespace GUITD {
 			// 
 			// buttonAutoDetectMonitors
 			// 
-			this->buttonAutoDetectMonitors->Location = System::Drawing::Point(136, 170);
+			this->buttonAutoDetectMonitors->Location = System::Drawing::Point(179, 169);
 			this->buttonAutoDetectMonitors->Name = L"buttonAutoDetectMonitors";
-			this->buttonAutoDetectMonitors->Size = System::Drawing::Size(123, 23);
+			this->buttonAutoDetectMonitors->Size = System::Drawing::Size(147, 23);
 			this->buttonAutoDetectMonitors->TabIndex = 6;
 			this->buttonAutoDetectMonitors->Text = L"Auto-detect";
 			this->buttonAutoDetectMonitors->UseVisualStyleBackColor = true;
@@ -495,11 +580,13 @@ namespace GUITD {
 			// 
 			this->panelHandleMonitor->Anchor = static_cast<System::Windows::Forms::AnchorStyles>(((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Left)
 				| System::Windows::Forms::AnchorStyles::Right));
+			this->panelHandleMonitor->BorderStyle = System::Windows::Forms::BorderStyle::FixedSingle;
 			this->panelHandleMonitor->Controls->Add(this->panelDebug);
+			this->panelHandleMonitor->Controls->Add(this->labelInformationTitle);
 			this->panelHandleMonitor->Controls->Add(this->panelInformation);
-			this->panelHandleMonitor->Location = System::Drawing::Point(332, 36);
+			this->panelHandleMonitor->Location = System::Drawing::Point(332, 32);
 			this->panelHandleMonitor->Name = L"panelHandleMonitor";
-			this->panelHandleMonitor->Size = System::Drawing::Size(399, 415);
+			this->panelHandleMonitor->Size = System::Drawing::Size(399, 236);
 			this->panelHandleMonitor->TabIndex = 7;
 			// 
 			// panelDebug
@@ -509,7 +596,7 @@ namespace GUITD {
 			this->panelDebug->Controls->Add(this->panelDebugColor);
 			this->panelDebug->Controls->Add(this->panelDebugPos);
 			this->panelDebug->Controls->Add(this->DebugTitle);
-			this->panelDebug->Location = System::Drawing::Point(3, 108);
+			this->panelDebug->Location = System::Drawing::Point(3, 128);
 			this->panelDebug->Name = L"panelDebug";
 			this->panelDebug->Size = System::Drawing::Size(393, 99);
 			this->panelDebug->TabIndex = 5;
@@ -517,7 +604,7 @@ namespace GUITD {
 			// buttonStopDebug
 			// 
 			this->buttonStopDebug->BackColor = System::Drawing::Color::DarkRed;
-			this->buttonStopDebug->Location = System::Drawing::Point(227, 56);
+			this->buttonStopDebug->Location = System::Drawing::Point(293, 56);
 			this->buttonStopDebug->Name = L"buttonStopDebug";
 			this->buttonStopDebug->Size = System::Drawing::Size(97, 25);
 			this->buttonStopDebug->TabIndex = 6;
@@ -528,7 +615,7 @@ namespace GUITD {
 			// 
 			// buttonLaunchDebug
 			// 
-			this->buttonLaunchDebug->Location = System::Drawing::Point(227, 26);
+			this->buttonLaunchDebug->Location = System::Drawing::Point(293, 27);
 			this->buttonLaunchDebug->Name = L"buttonLaunchDebug";
 			this->buttonLaunchDebug->Size = System::Drawing::Size(97, 25);
 			this->buttonLaunchDebug->TabIndex = 5;
@@ -609,13 +696,23 @@ namespace GUITD {
 			this->DebugTitle->Text = L"Debug";
 			this->DebugTitle->Click += gcnew System::EventHandler(this, &MainForm::label4_Click);
 			// 
+			// labelInformationTitle
+			// 
+			this->labelInformationTitle->AutoSize = true;
+			this->labelInformationTitle->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 12.25F));
+			this->labelInformationTitle->Location = System::Drawing::Point(7, 0);
+			this->labelInformationTitle->Name = L"labelInformationTitle";
+			this->labelInformationTitle->Size = System::Drawing::Size(91, 20);
+			this->labelInformationTitle->TabIndex = 10;
+			this->labelInformationTitle->Text = L"No Monitor";
+			// 
 			// panelInformation
 			// 
 			this->panelInformation->Controls->Add(this->panel2);
 			this->panelInformation->Controls->Add(this->panel1);
 			this->panelInformation->Controls->Add(this->panelPosition);
 			this->panelInformation->Controls->Add(this->labelInformation);
-			this->panelInformation->Location = System::Drawing::Point(3, 3);
+			this->panelInformation->Location = System::Drawing::Point(3, 23);
 			this->panelInformation->Name = L"panelInformation";
 			this->panelInformation->Size = System::Drawing::Size(393, 99);
 			this->panelInformation->TabIndex = 0;
@@ -723,7 +820,7 @@ namespace GUITD {
 			// 
 			this->buttonDetect->Location = System::Drawing::Point(12, 170);
 			this->buttonDetect->Name = L"buttonDetect";
-			this->buttonDetect->Size = System::Drawing::Size(118, 23);
+			this->buttonDetect->Size = System::Drawing::Size(161, 23);
 			this->buttonDetect->TabIndex = 8;
 			this->buttonDetect->Text = L"Detect";
 			this->buttonDetect->UseVisualStyleBackColor = true;
@@ -731,6 +828,7 @@ namespace GUITD {
 			// 
 			// panelError
 			// 
+			this->panelError->BorderStyle = System::Windows::Forms::BorderStyle::Fixed3D;
 			this->panelError->Controls->Add(this->labelErrorTitle);
 			this->panelError->Controls->Add(this->labelError);
 			this->panelError->Location = System::Drawing::Point(12, 462);
@@ -757,16 +855,6 @@ namespace GUITD {
 			this->labelError->Size = System::Drawing::Size(0, 13);
 			this->labelError->TabIndex = 0;
 			// 
-			// labelInformationTitle
-			// 
-			this->labelInformationTitle->AutoSize = true;
-			this->labelInformationTitle->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 12.25F));
-			this->labelInformationTitle->Location = System::Drawing::Point(328, 9);
-			this->labelInformationTitle->Name = L"labelInformationTitle";
-			this->labelInformationTitle->Size = System::Drawing::Size(91, 20);
-			this->labelInformationTitle->TabIndex = 10;
-			this->labelInformationTitle->Text = L"No Monitor";
-			// 
 			// panelSimulator
 			// 
 			this->panelSimulator->Controls->Add(this->buttonStopSimulation);
@@ -775,15 +863,15 @@ namespace GUITD {
 			this->panelSimulator->Controls->Add(this->labelFilePropTitle);
 			this->panelSimulator->Controls->Add(this->textBoxFileProp);
 			this->panelSimulator->Controls->Add(this->labelSimTitle);
-			this->panelSimulator->Location = System::Drawing::Point(11, 227);
+			this->panelSimulator->Location = System::Drawing::Point(11, 293);
 			this->panelSimulator->Name = L"panelSimulator";
-			this->panelSimulator->Size = System::Drawing::Size(247, 224);
+			this->panelSimulator->Size = System::Drawing::Size(315, 158);
 			this->panelSimulator->TabIndex = 11;
 			// 
 			// buttonStopSimulation
 			// 
 			this->buttonStopSimulation->BackColor = System::Drawing::Color::Brown;
-			this->buttonStopSimulation->Location = System::Drawing::Point(168, 198);
+			this->buttonStopSimulation->Location = System::Drawing::Point(237, 129);
 			this->buttonStopSimulation->Name = L"buttonStopSimulation";
 			this->buttonStopSimulation->Size = System::Drawing::Size(75, 23);
 			this->buttonStopSimulation->TabIndex = 17;
@@ -794,7 +882,7 @@ namespace GUITD {
 			// 
 			// buttonLaunchSim
 			// 
-			this->buttonLaunchSim->Location = System::Drawing::Point(8, 198);
+			this->buttonLaunchSim->Location = System::Drawing::Point(8, 130);
 			this->buttonLaunchSim->Name = L"buttonLaunchSim";
 			this->buttonLaunchSim->Size = System::Drawing::Size(75, 23);
 			this->buttonLaunchSim->TabIndex = 16;
@@ -804,7 +892,7 @@ namespace GUITD {
 			// 
 			// buttonSelectFileProp
 			// 
-			this->buttonSelectFileProp->Location = System::Drawing::Point(202, 36);
+			this->buttonSelectFileProp->Location = System::Drawing::Point(271, 46);
 			this->buttonSelectFileProp->Name = L"buttonSelectFileProp";
 			this->buttonSelectFileProp->Size = System::Drawing::Size(41, 19);
 			this->buttonSelectFileProp->TabIndex = 15;
@@ -815,7 +903,7 @@ namespace GUITD {
 			// labelFilePropTitle
 			// 
 			this->labelFilePropTitle->AutoSize = true;
-			this->labelFilePropTitle->Location = System::Drawing::Point(5, 20);
+			this->labelFilePropTitle->Location = System::Drawing::Point(8, 30);
 			this->labelFilePropTitle->Name = L"labelFilePropTitle";
 			this->labelFilePropTitle->Size = System::Drawing::Size(65, 13);
 			this->labelFilePropTitle->TabIndex = 14;
@@ -823,16 +911,16 @@ namespace GUITD {
 			// 
 			// textBoxFileProp
 			// 
-			this->textBoxFileProp->Location = System::Drawing::Point(5, 36);
+			this->textBoxFileProp->Location = System::Drawing::Point(8, 46);
 			this->textBoxFileProp->Name = L"textBoxFileProp";
-			this->textBoxFileProp->Size = System::Drawing::Size(191, 20);
+			this->textBoxFileProp->Size = System::Drawing::Size(260, 20);
 			this->textBoxFileProp->TabIndex = 13;
 			// 
 			// labelSimTitle
 			// 
 			this->labelSimTitle->AutoSize = true;
 			this->labelSimTitle->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 12.25F));
-			this->labelSimTitle->Location = System::Drawing::Point(4, 0);
+			this->labelSimTitle->Location = System::Drawing::Point(4, 4);
 			this->labelSimTitle->Name = L"labelSimTitle";
 			this->labelSimTitle->Size = System::Drawing::Size(80, 20);
 			this->labelSimTitle->TabIndex = 12;
@@ -846,13 +934,95 @@ namespace GUITD {
 			// 
 			this->colorDialogDebug->AnyColor = true;
 			// 
+			// panelVis
+			// 
+			this->panelVis->Controls->Add(this->buttonStopVis);
+			this->panelVis->Controls->Add(this->buttonLaunchVis);
+			this->panelVis->Controls->Add(this->panelFilePropVis);
+			this->panelVis->Controls->Add(this->labelVisualizator);
+			this->panelVis->Location = System::Drawing::Point(332, 293);
+			this->panelVis->Name = L"panelVis";
+			this->panelVis->Size = System::Drawing::Size(399, 158);
+			this->panelVis->TabIndex = 7;
+			// 
+			// buttonStopVis
+			// 
+			this->buttonStopVis->BackColor = System::Drawing::Color::DarkRed;
+			this->buttonStopVis->Location = System::Drawing::Point(299, 130);
+			this->buttonStopVis->Name = L"buttonStopVis";
+			this->buttonStopVis->Size = System::Drawing::Size(97, 25);
+			this->buttonStopVis->TabIndex = 6;
+			this->buttonStopVis->Text = L"Stop Vis";
+			this->buttonStopVis->UseVisualStyleBackColor = false;
+			this->buttonStopVis->Visible = false;
+			this->buttonStopVis->Click += gcnew System::EventHandler(this, &MainForm::buttonStopVis_Click);
+			// 
+			// buttonLaunchVis
+			// 
+			this->buttonLaunchVis->Location = System::Drawing::Point(8, 128);
+			this->buttonLaunchVis->Name = L"buttonLaunchVis";
+			this->buttonLaunchVis->Size = System::Drawing::Size(97, 25);
+			this->buttonLaunchVis->TabIndex = 5;
+			this->buttonLaunchVis->Text = L"Launch Vis";
+			this->buttonLaunchVis->UseVisualStyleBackColor = true;
+			this->buttonLaunchVis->Click += gcnew System::EventHandler(this, &MainForm::buttonLaunchVis_Click);
+			// 
+			// panelFilePropVis
+			// 
+			this->panelFilePropVis->Controls->Add(this->textBoxFilePropVis);
+			this->panelFilePropVis->Controls->Add(this->buttonFilePropVis);
+			this->panelFilePropVis->Controls->Add(this->labelFilePropVis);
+			this->panelFilePropVis->Location = System::Drawing::Point(8, 27);
+			this->panelFilePropVis->Name = L"panelFilePropVis";
+			this->panelFilePropVis->Size = System::Drawing::Size(388, 46);
+			this->panelFilePropVis->TabIndex = 4;
+			// 
+			// textBoxFilePropVis
+			// 
+			this->textBoxFilePropVis->Location = System::Drawing::Point(4, 20);
+			this->textBoxFilePropVis->Name = L"textBoxFilePropVis";
+			this->textBoxFilePropVis->Size = System::Drawing::Size(328, 20);
+			this->textBoxFilePropVis->TabIndex = 5;
+			// 
+			// buttonFilePropVis
+			// 
+			this->buttonFilePropVis->BackColor = System::Drawing::Color::Transparent;
+			this->buttonFilePropVis->ForeColor = System::Drawing::SystemColors::ActiveCaptionText;
+			this->buttonFilePropVis->Location = System::Drawing::Point(338, 19);
+			this->buttonFilePropVis->Name = L"buttonFilePropVis";
+			this->buttonFilePropVis->Size = System::Drawing::Size(47, 21);
+			this->buttonFilePropVis->TabIndex = 4;
+			this->buttonFilePropVis->Text = L". . .";
+			this->buttonFilePropVis->UseVisualStyleBackColor = false;
+			this->buttonFilePropVis->Click += gcnew System::EventHandler(this, &MainForm::buttonFilePropVis_Click);
+			// 
+			// labelFilePropVis
+			// 
+			this->labelFilePropVis->AutoSize = true;
+			this->labelFilePropVis->Location = System::Drawing::Point(4, 3);
+			this->labelFilePropVis->Name = L"labelFilePropVis";
+			this->labelFilePropVis->Size = System::Drawing::Size(65, 13);
+			this->labelFilePropVis->TabIndex = 1;
+			this->labelFilePropVis->Text = L"File Property";
+			// 
+			// labelVisualizator
+			// 
+			this->labelVisualizator->AutoSize = true;
+			this->labelVisualizator->Font = (gcnew System::Drawing::Font(L"Microsoft Sans Serif", 12.25F));
+			this->labelVisualizator->Location = System::Drawing::Point(4, 4);
+			this->labelVisualizator->Name = L"labelVisualizator";
+			this->labelVisualizator->Size = System::Drawing::Size(97, 20);
+			this->labelVisualizator->TabIndex = 0;
+			this->labelVisualizator->Text = L"Visualizator";
+			this->labelVisualizator->Click += gcnew System::EventHandler(this, &MainForm::label3_Click);
+			// 
 			// MainForm
 			// 
 			this->AutoScaleDimensions = System::Drawing::SizeF(6, 13);
 			this->AutoScaleMode = System::Windows::Forms::AutoScaleMode::Font;
-			this->ClientSize = System::Drawing::Size(743, 613);
+			this->ClientSize = System::Drawing::Size(743, 535);
+			this->Controls->Add(this->panelVis);
 			this->Controls->Add(this->panelSimulator);
-			this->Controls->Add(this->labelInformationTitle);
 			this->Controls->Add(this->panelError);
 			this->Controls->Add(this->buttonDetect);
 			this->Controls->Add(this->panelHandleMonitor);
@@ -867,6 +1037,7 @@ namespace GUITD {
 			this->menuStrip->ResumeLayout(false);
 			this->menuStrip->PerformLayout();
 			this->panelHandleMonitor->ResumeLayout(false);
+			this->panelHandleMonitor->PerformLayout();
 			this->panelDebug->ResumeLayout(false);
 			this->panelDebug->PerformLayout();
 			this->panelDebugColor->ResumeLayout(false);
@@ -885,6 +1056,10 @@ namespace GUITD {
 			this->panelError->PerformLayout();
 			this->panelSimulator->ResumeLayout(false);
 			this->panelSimulator->PerformLayout();
+			this->panelVis->ResumeLayout(false);
+			this->panelVis->PerformLayout();
+			this->panelFilePropVis->ResumeLayout(false);
+			this->panelFilePropVis->PerformLayout();
 			this->ResumeLayout(false);
 			this->PerformLayout();
 
@@ -895,6 +1070,8 @@ namespace GUITD {
 		this->staticButtonStopSim = this->buttonStopSimulation;
 		this->staticButtonLaunchDebug = this->buttonLaunchDebug;
 		this->staticButtonStopDebug = this->buttonStopDebug;
+		this->staticButtonLaunchVis = this->buttonLaunchVis;
+		this->staticButtonStopVis = this->buttonStopVis;
 		this->staticLabelError = this->labelError;
 		this->InitializeComponentsWithMonitors();
 	}
@@ -925,7 +1102,6 @@ private: System::Void buttonSelectFileProp_Click(System::Object^ sender, System:
 	System::Windows::Forms::DialogResult result = this->openFileDialogFP->ShowDialog();
 	if (result == System::Windows::Forms::DialogResult::OK) {
 		this->textBoxFileProp->Text = this->openFileDialogFP->FileName;
-		this->simFile = this->openFileDialogFP->FileName;
 	}
 }
 private: System::Void buttonLaunchSim_Click(System::Object^ sender, System::EventArgs^ e) {
@@ -960,6 +1136,24 @@ private: System::Void buttonStopDebug_Click(System::Object^ sender, System::Even
 	this->finishDebug();
 	this->buttonLaunchDebug->Visible = true;
 	this->buttonStopDebug->Visible = false;
+}
+private: System::Void label3_Click(System::Object^ sender, System::EventArgs^ e) {
+}
+private: System::Void buttonFilePropVis_Click(System::Object^ sender, System::EventArgs^ e) {
+	System::Windows::Forms::DialogResult result = this->openFileDialogFP->ShowDialog();
+	if (result == System::Windows::Forms::DialogResult::OK) {
+		this->textBoxFilePropVis->Text = this->openFileDialogFP->FileName;
+	}
+}
+private: System::Void buttonLaunchVis_Click(System::Object^ sender, System::EventArgs^ e) {
+	this->initVisMode();
+	this->buttonLaunchVis->Visible = false;
+	this->buttonStopVis->Visible = true;
+}
+private: System::Void buttonStopVis_Click(System::Object^ sender, System::EventArgs^ e) {
+	this->finishVis();
+	this->buttonLaunchVis->Visible = true;
+	this->buttonStopVis->Visible = false;
 }
 };
 }

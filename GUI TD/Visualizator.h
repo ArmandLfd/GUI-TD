@@ -32,6 +32,7 @@ private:
 	char* constructStringPath(int nbMonitor);
 	void setColor(double** newColorList);
 	void makeContext(int nbMonitor);
+	void printFps(int* frameCount, double* previousTime);
 
 	char* pathFileProp;
 	GLFWwindow** windows;

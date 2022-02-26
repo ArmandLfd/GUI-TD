@@ -69,7 +69,7 @@ void Visualizator::loadTexture(int nbMonitor) {
 }
 
 void Visualizator::applyTexture(int nbMonitor) {
-	if (!texImg[nbMonitor].empty())
+	if (!texImg[nbMonitor].empty() && this->Frame > 1)
 		this->texImg->release();
 
 	if (this->isDebuggingMode) {
@@ -78,20 +78,22 @@ void Visualizator::applyTexture(int nbMonitor) {
 		this->texImg[nbMonitor] = Mat(500, 500, CV_8UC3, Scalar(colorChosenList[nbMonitor][0], colorChosenList[nbMonitor][1], colorChosenList[nbMonitor][2]));
 	}
 	else {
-		char* pathToLoad = this->constructStringPath(nbMonitor);
-		texImg[nbMonitor] = imread(pathToLoad);
-		if (!texImg[nbMonitor].empty()) {
-			flip(texImg[nbMonitor], texImg[nbMonitor], 0);
-			cvtColor(texImg[nbMonitor], texImg[nbMonitor], COLOR_BGR2RGB);
-		}
-		else {
-			//Error load
-			char errorMsg[252];
-			sprintf(errorMsg, "Impossible to load image in Simualtor: %s", pathToLoad);
+		if (this->Frame > 1 || texImg[nbMonitor].empty()) {
+			char* pathToLoad = this->constructStringPath(nbMonitor);
+			texImg[nbMonitor] = imread(pathToLoad);
+			if (!texImg[nbMonitor].empty()) {
+				flip(texImg[nbMonitor], texImg[nbMonitor], 0);
+				cvtColor(texImg[nbMonitor], texImg[nbMonitor], COLOR_BGR2RGB);
+			}
+			else {
+				//Error load
+				char errorMsg[252];
+				sprintf(errorMsg, "Impossible to load image in Simualtor: %s", pathToLoad);
+				delete(pathToLoad);
+				throw std::invalid_argument(errorMsg);
+			}
 			delete(pathToLoad);
-			throw std::invalid_argument(errorMsg);
 		}
-		delete(pathToLoad);
 	}
 	glBindTexture(GL_TEXTURE_2D, texture[nbMonitor]);
 	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texImg[nbMonitor].size[1], texImg[nbMonitor].size[0], 0, GL_RGB, GL_UNSIGNED_BYTE, texImg[nbMonitor].data);
@@ -143,6 +145,20 @@ void Visualizator::makeContext(int nbMonitor) {
 		glfwMakeContextCurrent(windows[nbMonitor]);
 }
 
+void Visualizator::printFps(int* frameCount,double* previousTime) {
+	// Measure speed
+	double currentTime = glfwGetTime();
+	// If a second has passed.
+	if (currentTime - *previousTime >= 1.0)
+	{
+		// Display the frame count here any way you want.
+		printf("FPS: %i\n", *frameCount);
+
+		*frameCount = 0;
+		*previousTime = currentTime;
+	}
+}
+
 void Visualizator::launchSim() {
 	try {
 		if (!isDebuggingMode)
@@ -164,6 +180,8 @@ void Visualizator::launchSim() {
 
 	glClearColor(1.0f, 1.0f, 1.0f, 0.0);
 
+	int frameCount = 0;
+	double initTime = glfwGetTime();
 	while (true)
 	{
 		//Rendering
@@ -182,7 +200,8 @@ void Visualizator::launchSim() {
 			this->draw(i);
 			glfwSwapBuffers(windows[i]);
 		}
-		
+		frameCount++;
+		this->printFps(&frameCount,&initTime);
 		this->nowFrame = (this->nowFrame + 1) % this->Frame;
 		//Events
 		glfwPollEvents();
@@ -191,6 +210,7 @@ void Visualizator::launchSim() {
 		glDeleteBuffers(1, EBO + i);
 		glDeleteVertexArrays(1, VAO + i);
 		glDeleteBuffers(1, VBO + i);
+		glfwDestroyWindow(this->windows[i]);
 	}
 	this->~Visualizator();
 }
