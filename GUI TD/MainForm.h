@@ -159,6 +159,8 @@ namespace GUITD {
 		static System::Windows::Forms::Label^ staticLabelError;
 		static System::Windows::Forms::Button^ staticButtonLaunchSim, ^staticButtonStopSim,^staticButtonLaunchDebug,^staticButtonStopDebug,^staticButtonLaunchVis, ^staticButtonStopVis;
 		array<System::Drawing::Color^>^ listColorDebug;
+		static Visualizator* vis = NULL;
+		static Simulator* sim = NULL;
 
 		// Initialize k components with k = # of monitors
 		void InitializeComponentsWithMonitors() {
@@ -239,10 +241,10 @@ namespace GUITD {
 				//array<Color^>^ listColor = (array<Color^>^) tmpList[4]; //No need here
 				double** listColor_ptr = NULL;
 
-				Visualizator* vis = new Visualizator(nbMonitor, listMonitors, isDebuggingMode, path, listColor_ptr);
+				vis = new Visualizator(nbMonitor, listMonitors, isDebuggingMode, path, listColor_ptr);
 				vis->launchSim();
-				delete[] listMonitors;
-				delete[] listColor_ptr;
+				delete vis;
+				vis = NULL;
 			}
 			catch (std::exception e) {
 				printErrorDelegate^ action = gcnew printErrorDelegate(&MainForm::printError);
@@ -273,10 +275,10 @@ namespace GUITD {
 					listColor_ptr[i][2] = listColor[i]->B;
 				}
 
-				Visualizator* vis = new Visualizator(nbMonitor,listMonitors,isDebuggingMode,path,listColor_ptr);
+				vis = new Visualizator(nbMonitor,listMonitors,isDebuggingMode,path,listColor_ptr);
 				vis->launchSim();
-				delete[] listMonitors;
-				delete[] listColor_ptr;
+				delete vis;
+				vis = NULL;
 			}
 			catch (std::exception e) {
 				printErrorDelegate^ action = gcnew printErrorDelegate(&MainForm::printError);
@@ -291,8 +293,10 @@ namespace GUITD {
 		static void LaunchSim(Object^ pathFile) {
 			msclr::interop::marshal_context converter;
 			try {
-				Simulator^ simulator = gcnew Simulator((char*)(converter.marshal_as<const char*>((System::String^)pathFile)));
-				simulator->launchSim();
+				sim = new Simulator((char*)(converter.marshal_as<const char*>((System::String^)pathFile)));
+				sim->launchSim();
+				delete sim;
+				sim = NULL;
 			}
 			catch (std::exception e) {
 				printErrorDelegate^ action = gcnew printErrorDelegate(&MainForm::printError);
@@ -379,14 +383,20 @@ namespace GUITD {
 
 		void finishSim() {
 			this->simulation->Abort();
+			delete sim;
+			sim = nullptr;
 		}
 
 		void finishVis() {
 			this->visualizator->Abort();
+			delete vis;
+			vis = NULL;
 		}
 
 		void finishDebug() {
 			this->debugVis->Abort();
+			delete vis;
+			vis = NULL;
 		}
 
 		void changeColorDebug() {
@@ -1105,14 +1115,24 @@ private: System::Void buttonSelectFileProp_Click(System::Object^ sender, System:
 	}
 }
 private: System::Void buttonLaunchSim_Click(System::Object^ sender, System::EventArgs^ e) {
-	this->InitSim();
-	this->buttonLaunchSim->Visible = false;
-	this->buttonStopSimulation->Visible = true;
+	if (sim != NULL) {
+		this->printError("Impossible to launch simulation if already one started...");
+	}
+	else {
+		this->InitSim();
+		this->buttonLaunchSim->Visible = false;
+		this->buttonStopSimulation->Visible = true;
+	}
 }
 private: System::Void buttonStopSimulation_Click(System::Object^ sender, System::EventArgs^ e) {
-	this->finishSim();
-	this->buttonLaunchSim->Visible = true;
-	this->buttonStopSimulation->Visible = false;
+	if (sim == NULL) {
+		this->printError("Impossible to stop debugging if not started...");
+	}
+	else {
+		this->finishSim();
+		this->buttonLaunchSim->Visible = true;
+		this->buttonStopSimulation->Visible = false;
+	}
 }
 private: System::Void panelError_Paint(System::Object^ sender, System::Windows::Forms::PaintEventArgs^ e) {
 }
@@ -1128,14 +1148,24 @@ private: System::Void buttonDebugColor_Click(System::Object^ sender, System::Eve
 	}
 }
 private: System::Void buttonLaunchDebug_Click(System::Object^ sender, System::EventArgs^ e) {
-	this->initDebugMode();
-	this->buttonLaunchDebug->Visible = false;
-	this->buttonStopDebug->Visible = true;
+	if (vis != NULL) {
+		this->printError("Impossible to launch debugging if already one started...");
+	}
+	else {
+		this->initDebugMode();
+		this->buttonLaunchDebug->Visible = false;
+		this->buttonStopDebug->Visible = true;
+	}
 }
 private: System::Void buttonStopDebug_Click(System::Object^ sender, System::EventArgs^ e) {
-	this->finishDebug();
-	this->buttonLaunchDebug->Visible = true;
-	this->buttonStopDebug->Visible = false;
+	if (vis == NULL) {
+		this->printError("Impossible to stop debugging if not started...");
+	}
+	else {
+		this->finishDebug();
+		this->buttonLaunchDebug->Visible = true;
+		this->buttonStopDebug->Visible = false;
+	}
 }
 private: System::Void label3_Click(System::Object^ sender, System::EventArgs^ e) {
 }
@@ -1146,14 +1176,24 @@ private: System::Void buttonFilePropVis_Click(System::Object^ sender, System::Ev
 	}
 }
 private: System::Void buttonLaunchVis_Click(System::Object^ sender, System::EventArgs^ e) {
-	this->initVisMode();
-	this->buttonLaunchVis->Visible = false;
-	this->buttonStopVis->Visible = true;
+	if (vis != NULL) {
+		this->printError("Impossible to launch visualization if already one started...");
+	}
+	else {
+		this->initVisMode();
+		this->buttonLaunchVis->Visible = false;
+		this->buttonStopVis->Visible = true;
+	}
 }
 private: System::Void buttonStopVis_Click(System::Object^ sender, System::EventArgs^ e) {
-	this->finishVis();
-	this->buttonLaunchVis->Visible = true;
-	this->buttonStopVis->Visible = false;
+	if (vis == NULL) {
+		this->printError("Impossible to stop visualization if not started...");
+	}
+	else {
+		this->finishVis();
+		this->buttonLaunchVis->Visible = true;
+		this->buttonStopVis->Visible = false;
+	}
 }
 };
 }

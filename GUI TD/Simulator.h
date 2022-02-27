@@ -12,7 +12,7 @@
 
 using namespace cv;
 
-ref class Simulator
+class Simulator
 {
 public:
 	Simulator(char* pathFile);

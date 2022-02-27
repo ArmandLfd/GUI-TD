@@ -63,13 +63,6 @@ void Simulator::launchSim() {
 		glfwSwapBuffers(window);
 		glfwPollEvents();
 	}
-	for (int i = 0; i < this->LayerNum; i++){
-		glDeleteBuffers(1, EBO + i);
-		glDeleteVertexArrays(1, VAO+i);
-		glDeleteBuffers(1, VBO+i);
-	}
-	glfwDestroyWindow(this->window);
-	this->~Simulator();
 }
 
 void Simulator::buildDisplay(int depth) {
@@ -230,11 +223,18 @@ void Simulator::loadFileProp(char* pathFileProp) {
 }
 
 Simulator::~Simulator() {
+	for (int i = 0; i < this->LayerNum; i++) {
+		glDeleteBuffers(1, EBO + i);
+		glDeleteVertexArrays(1, VAO + i);
+		glDeleteBuffers(1, VBO + i);
+		texImg[i].release();
+	}
+	glfwDestroyWindow(this->window);
 	delete[]pathToLayerImg;
 	delete[]VAO;
 	delete[]VBO;
 	delete[]EBO;
-	delete []texImg;
+	delete[]texImg;
 	delete[]texture;
 }
 

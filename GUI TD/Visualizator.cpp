@@ -2,6 +2,7 @@
 
 Visualizator::Visualizator(int nbOfMonitors,GLFWmonitor** listMonitors,bool isDebuggingMode, char* pathFileProp,double** colorChosenList) {
 	this->nbMonitors = nbOfMonitors;
+	this->sizeOfMonitors = sizeOfMonitors;
 	this->listMonitors = listMonitors;
 	this->isDebuggingMode = isDebuggingMode;
 	this->pathFileProp = pathFileProp;
@@ -47,9 +48,8 @@ void Visualizator::buildLayer(int nbMonitor) {
 	glBindVertexArray(0);
 }
 
-
 void Visualizator::loadTexture(int nbMonitor) {
-	this->texImg[nbMonitor] = Mat();
+	this->texImg[nbMonitor] = new Mat();
 	glGenTextures(1, texture + nbMonitor);
 	glBindTexture(GL_TEXTURE_2D, texture[nbMonitor]);
 	// GL, by default, expects rows of pixels to be padded to a multiple of 4 bytes.A 1366 wide texture with 1 byte or 3 byte wide pixels, will not be naturally 4 byte aligned.
@@ -69,34 +69,34 @@ void Visualizator::loadTexture(int nbMonitor) {
 }
 
 void Visualizator::applyTexture(int nbMonitor) {
-	if (!texImg[nbMonitor].empty() && this->Frame > 1)
-		this->texImg->release();
+	if ((!texImg[nbMonitor]->empty()) && this->Frame > 1) {
+		this->texImg[nbMonitor]->release();
+	}
 
 	if (this->isDebuggingMode) {
 		if (this->colorChosenList == NULL)
 			throw std::invalid_argument("Impossible to debug with no chosen color...");
-		this->texImg[nbMonitor] = Mat(500, 500, CV_8UC3, Scalar(colorChosenList[nbMonitor][0], colorChosenList[nbMonitor][1], colorChosenList[nbMonitor][2]));
+		this->texImg[nbMonitor] = new Mat(500, 500, CV_8UC3, Scalar(colorChosenList[nbMonitor][0], colorChosenList[nbMonitor][1], colorChosenList[nbMonitor][2]));
 	}
 	else {
-		if (this->Frame > 1 || texImg[nbMonitor].empty()) {
+		if (this->Frame > 1 || texImg[nbMonitor]->empty()) {
 			char* pathToLoad = this->constructStringPath(nbMonitor);
-			texImg[nbMonitor] = imread(pathToLoad);
-			if (!texImg[nbMonitor].empty()) {
-				flip(texImg[nbMonitor], texImg[nbMonitor], 0);
-				cvtColor(texImg[nbMonitor], texImg[nbMonitor], COLOR_BGR2RGB);
+			*texImg[nbMonitor] = imread(pathToLoad);
+			delete(pathToLoad);
+			if (!texImg[nbMonitor]->empty()) {
+				flip(*texImg[nbMonitor], *texImg[nbMonitor], 0);
+				cvtColor(*texImg[nbMonitor], *texImg[nbMonitor], COLOR_BGR2RGB);
 			}
 			else {
 				//Error load
 				char errorMsg[252];
 				sprintf(errorMsg, "Impossible to load image in Simualtor: %s", pathToLoad);
-				delete(pathToLoad);
 				throw std::invalid_argument(errorMsg);
 			}
-			delete(pathToLoad);
 		}
 	}
 	glBindTexture(GL_TEXTURE_2D, texture[nbMonitor]);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texImg[nbMonitor].size[1], texImg[nbMonitor].size[0], 0, GL_RGB, GL_UNSIGNED_BYTE, texImg[nbMonitor].data);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texImg[nbMonitor]->size[1], texImg[nbMonitor]->size[0], 0, GL_RGB, GL_UNSIGNED_BYTE, texImg[nbMonitor]->data);
 	glGenerateMipmap(GL_TEXTURE_2D);
 }
 
@@ -206,16 +206,23 @@ void Visualizator::launchSim() {
 		//Events
 		glfwPollEvents();
 	}
+}
+
+Visualizator::~Visualizator() {
 	for (int i = 0; i < this->nbMonitors; i++) {
 		glDeleteBuffers(1, EBO + i);
 		glDeleteVertexArrays(1, VAO + i);
 		glDeleteBuffers(1, VBO + i);
+		texImg[i]->release();
 		glfwDestroyWindow(this->windows[i]);
+		if (isDebuggingMode)
+			delete colorChosenList[i];
 	}
-	this->~Visualizator();
-}
 
-Visualizator::~Visualizator() {
+	delete listMonitors;
+	if (isDebuggingMode)
+		delete[] colorChosenList;
+
 	delete[] shaderProgram;
 	delete[] VBO;
 	delete[] VAO;
@@ -253,7 +260,7 @@ void Visualizator::initEnv() {
 	glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 	//glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_COMPAT_PROFILE);
 	//Launch nb of windows
-	windows = new GLFWwindow *[nbMonitors];
+	windows = new GLFWwindow * [nbMonitors];
 	int xPos, yPos;
 	for (int i = 0; i < this->nbMonitors; i++) {
 		const GLFWvidmode* mode = glfwGetVideoMode(this->listMonitors[i]);
@@ -283,9 +290,9 @@ void Visualizator::initEnv() {
 	VBO = new unsigned int[this->nbMonitors];
 	VAO = new unsigned int[this->nbMonitors];
 	EBO = new unsigned int[this->nbMonitors];
-	
+
 	texture = new unsigned int[this->nbMonitors];
-	this->texImg = new Mat[this->nbMonitors];
+	this->texImg = new Mat*[this->nbMonitors];
 }
 
 

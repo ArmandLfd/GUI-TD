@@ -37,6 +37,7 @@ private:
 	char* pathFileProp;
 	GLFWwindow** windows;
 	GLFWmonitor** listMonitors;
+	int* sizeOfMonitors;
 	int nbMonitors;
 	unsigned int* shaderProgram;
 
@@ -48,7 +49,7 @@ private:
 
 	GLint texLoc, rmAddLoc = NULL;
 	unsigned int* texture;
-	Mat* texImg;
+	Mat** texImg;
 	unsigned int* VBO, * VAO, * EBO;
 
 	bool isDebuggingMode;
