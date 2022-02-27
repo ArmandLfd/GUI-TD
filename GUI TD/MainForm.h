@@ -588,8 +588,6 @@ namespace GUITD {
 			// 
 			// panelHandleMonitor
 			// 
-			this->panelHandleMonitor->Anchor = static_cast<System::Windows::Forms::AnchorStyles>(((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Left)
-				| System::Windows::Forms::AnchorStyles::Right));
 			this->panelHandleMonitor->BorderStyle = System::Windows::Forms::BorderStyle::FixedSingle;
 			this->panelHandleMonitor->Controls->Add(this->panelDebug);
 			this->panelHandleMonitor->Controls->Add(this->labelInformationTitle);
@@ -946,6 +944,8 @@ namespace GUITD {
 			// 
 			// panelVis
 			// 
+			this->panelVis->Anchor = static_cast<System::Windows::Forms::AnchorStyles>(((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Left)
+				| System::Windows::Forms::AnchorStyles::Right));
 			this->panelVis->Controls->Add(this->buttonStopVis);
 			this->panelVis->Controls->Add(this->buttonLaunchVis);
 			this->panelVis->Controls->Add(this->panelFilePropVis);
@@ -979,6 +979,8 @@ namespace GUITD {
 			// 
 			// panelFilePropVis
 			// 
+			this->panelFilePropVis->Anchor = static_cast<System::Windows::Forms::AnchorStyles>(((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Left)
+				| System::Windows::Forms::AnchorStyles::Right));
 			this->panelFilePropVis->Controls->Add(this->textBoxFilePropVis);
 			this->panelFilePropVis->Controls->Add(this->buttonFilePropVis);
 			this->panelFilePropVis->Controls->Add(this->labelFilePropVis);

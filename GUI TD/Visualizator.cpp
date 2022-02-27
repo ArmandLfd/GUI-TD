@@ -49,7 +49,7 @@ void Visualizator::buildLayer(int nbMonitor) {
 }
 
 void Visualizator::loadTexture(int nbMonitor) {
-	this->texImg[nbMonitor] = new Mat();
+	this->texImg[nbMonitor] = Mat();
 	glGenTextures(1, texture + nbMonitor);
 	glBindTexture(GL_TEXTURE_2D, texture[nbMonitor]);
 	// GL, by default, expects rows of pixels to be padded to a multiple of 4 bytes.A 1366 wide texture with 1 byte or 3 byte wide pixels, will not be naturally 4 byte aligned.
@@ -69,34 +69,34 @@ void Visualizator::loadTexture(int nbMonitor) {
 }
 
 void Visualizator::applyTexture(int nbMonitor) {
-	if ((!texImg[nbMonitor]->empty()) && this->Frame > 1) {
-		this->texImg[nbMonitor]->release();
+	if ((!texImg[nbMonitor].empty()) && this->Frame > 1) {
+		this->texImg[nbMonitor].release();
 	}
 
 	if (this->isDebuggingMode) {
 		if (this->colorChosenList == NULL)
 			throw std::invalid_argument("Impossible to debug with no chosen color...");
-		this->texImg[nbMonitor] = new Mat(500, 500, CV_8UC3, Scalar(colorChosenList[nbMonitor][0], colorChosenList[nbMonitor][1], colorChosenList[nbMonitor][2]));
+		this->texImg[nbMonitor] = Mat(500, 500, CV_8UC3, Scalar(colorChosenList[nbMonitor][0], colorChosenList[nbMonitor][1], colorChosenList[nbMonitor][2]));
 	}
 	else {
-		if (this->Frame > 1 || texImg[nbMonitor]->empty()) {
+		if (this->Frame > 1 || texImg[nbMonitor].empty()) {
 			char* pathToLoad = this->constructStringPath(nbMonitor);
-			*texImg[nbMonitor] = imread(pathToLoad);
+			texImg[nbMonitor] = imread(pathToLoad, IMREAD_COLOR);
 			delete(pathToLoad);
-			if (!texImg[nbMonitor]->empty()) {
-				flip(*texImg[nbMonitor], *texImg[nbMonitor], 0);
-				cvtColor(*texImg[nbMonitor], *texImg[nbMonitor], COLOR_BGR2RGB);
+			if (!texImg[nbMonitor].empty()) {
+				flip(texImg[nbMonitor], texImg[nbMonitor], 0);
+				cvtColor(texImg[nbMonitor], texImg[nbMonitor], COLOR_BGR2RGB);
 			}
 			else {
 				//Error load
 				char errorMsg[252];
-				sprintf(errorMsg, "Impossible to load image in Simualtor: %s", pathToLoad);
+				sprintf(errorMsg, "Impossible to load image in visualizator:\n %s", pathToLoad);
 				throw std::invalid_argument(errorMsg);
 			}
 		}
 	}
 	glBindTexture(GL_TEXTURE_2D, texture[nbMonitor]);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texImg[nbMonitor]->size[1], texImg[nbMonitor]->size[0], 0, GL_RGB, GL_UNSIGNED_BYTE, texImg[nbMonitor]->data);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texImg[nbMonitor].size[1], texImg[nbMonitor].size[0], 0, GL_RGB, GL_UNSIGNED_BYTE, texImg[nbMonitor].data);
 	glGenerateMipmap(GL_TEXTURE_2D);
 }
 
@@ -213,7 +213,7 @@ Visualizator::~Visualizator() {
 		glDeleteBuffers(1, EBO + i);
 		glDeleteVertexArrays(1, VAO + i);
 		glDeleteBuffers(1, VBO + i);
-		texImg[i]->release();
+		texImg[i].release();
 		glfwDestroyWindow(this->windows[i]);
 		if (isDebuggingMode)
 			delete colorChosenList[i];
@@ -292,7 +292,7 @@ void Visualizator::initEnv() {
 	EBO = new unsigned int[this->nbMonitors];
 
 	texture = new unsigned int[this->nbMonitors];
-	this->texImg = new Mat*[this->nbMonitors];
+	this->texImg = new Mat[this->nbMonitors];
 }
 
 

@@ -49,7 +49,7 @@ private:
 
 	GLint texLoc, rmAddLoc = NULL;
 	unsigned int* texture;
-	Mat** texImg;
+	Mat* texImg;
 	unsigned int* VBO, * VAO, * EBO;
 
 	bool isDebuggingMode;

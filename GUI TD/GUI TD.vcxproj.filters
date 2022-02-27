@@ -27,9 +27,6 @@
     <ClCompile Include="Dependecies\GLAD\src\glad.c">
       <Filter>Fichiers sources</Filter>
     </ClCompile>
-    <ClCompile Include="DebugVisualizator.cpp">
-      <Filter>Fichiers sources</Filter>
-    </ClCompile>
     <ClCompile Include="Visualizator.cpp">
       <Filter>Fichiers sources</Filter>
     </ClCompile>
@@ -39,9 +36,6 @@
       <Filter>Fichiers d%27en-tête</Filter>
     </ClInclude>
     <ClInclude Include="Simulator.h">
-      <Filter>Fichiers d%27en-tête</Filter>
-    </ClInclude>
-    <ClInclude Include="DebugVisualizator.h">
       <Filter>Fichiers d%27en-tête</Filter>
     </ClInclude>
     <ClInclude Include="Visualizator.h">

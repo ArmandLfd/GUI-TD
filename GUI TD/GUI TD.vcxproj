@@ -106,7 +106,7 @@
       </AdditionalIncludeDirectories>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>glfw3.lib;glfw3dll.lib;User32.lib;Gdi32.lib;Shell32.lib;opencv_world412d.lib;opengl32.lib;opencv_world412.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>glfw3.lib;glfw3dll.lib;User32.lib;Gdi32.lib;Shell32.lib;opencv_world412d.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>
       </AdditionalLibraryDirectories>
       <EntryPointSymbol>main</EntryPointSymbol>
@@ -127,7 +127,7 @@
       <PreprocessorDefinitions>NDEBUG;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>glfw3.lib;glfw3dll.lib;User32.lib;Gdi32.lib;Shell32.lib;opencv_world412d.lib;opengl32.lib;opencv_world412.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>glfw3.lib;glfw3dll.lib;User32.lib;Gdi32.lib;Shell32.lib;opengl32.lib;opencv_world412.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <EntryPointSymbol>main</EntryPointSymbol>
     </Link>
   </ItemDefinitionGroup>
