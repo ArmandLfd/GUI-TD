@@ -210,6 +210,7 @@ void Visualizator::launchSim() {
 
 Visualizator::~Visualizator() {
 	for (int i = 0; i < this->nbMonitors; i++) {
+		this->makeContext(i);
 		glDeleteBuffers(1, EBO + i);
 		glDeleteVertexArrays(1, VAO + i);
 		glDeleteBuffers(1, VBO + i);
