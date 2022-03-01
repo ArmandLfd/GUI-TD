@@ -121,6 +121,10 @@ namespace GUITD {
 
 	private: System::Windows::Forms::Label^ labelVisualizator;
 	private: System::Windows::Forms::TextBox^ textBoxFilePropVis;
+private: System::Windows::Forms::Panel^ panelVisFacColCorOrient;
+private: System::Windows::Forms::TextBox^ textBoxFacColorCorOrient;
+private: System::Windows::Forms::Label^ labelFactorColorCorOrient;
+private: System::Windows::Forms::Button^ buttonApplyChangeVis;
 
 
 
@@ -173,10 +177,12 @@ namespace GUITD {
 			}
 			this->listMonitors = glfwGetMonitors(nbMonitors);
 
+			this->textBoxFacColorCorOrient->Text = (*nbMonitors).ToString();
+			this->buttonApplyChangeVis->Visible = false;
+
 			if (listLayer != NULL)
 				delete[] listLayer;
 			listLayer = new int[*nbMonitors];
-
 			listColorDebug = gcnew array<System::Drawing::Color^> (*nbMonitors);
 
 			for (int i = 0; i < *nbMonitors; i++) {
@@ -245,11 +251,10 @@ namespace GUITD {
 				char* path = (char*)converter.marshal_as<const char*>((System::String^)tmpList[3]);
 				//array<Color^>^ listColor = (array<Color^>^) tmpList[4]; //No need here
 				double** listColor_ptr = NULL;
+				double factorRmAdd = Convert::ToDouble(tmpList[5]);
 
-				vis = new Visualizator(nbMonitor, listMonitors, isDebuggingMode, path, listColor_ptr);
+				vis = new Visualizator(nbMonitor, listMonitors, isDebuggingMode, path, listColor_ptr,factorRmAdd);
 				vis->launchSim();
-				delete vis;
-				vis = NULL;
 			}
 			catch (std::exception e) {
 				printErrorDelegate^ action = gcnew printErrorDelegate(&MainForm::printError);
@@ -259,6 +264,9 @@ namespace GUITD {
 			MainForm::staticButtonLaunchVis->Invoke(actionLaunchVis, gcnew array<Object^> {System::Boolean(true)});
 			displayButtonStopVisDelegate^ actionStopVis = gcnew displayButtonStopVisDelegate(&MainForm::displayButtonStopVis);
 			MainForm::staticButtonStopVis->Invoke(actionStopVis, gcnew array<Object^> {System::Boolean(true)});
+
+			delete vis;
+			vis = NULL;
 		}
 
 		static void launchDebugMode(Object^ listParams) {
@@ -282,8 +290,6 @@ namespace GUITD {
 
 				vis = new Visualizator(nbMonitor,listMonitors,isDebuggingMode,path,listColor_ptr);
 				vis->launchSim();
-				delete vis;
-				vis = NULL;
 			}
 			catch (std::exception e) {
 				printErrorDelegate^ action = gcnew printErrorDelegate(&MainForm::printError);
@@ -293,6 +299,9 @@ namespace GUITD {
 			MainForm::staticButtonLaunchDebug->Invoke(actionLaunchDebug, gcnew array<Object^> {System::Boolean(true)});
 			displayButtonStopDebugDelegate^ actionStopDebug = gcnew displayButtonStopDebugDelegate(&MainForm::displayButtonStopVis);
 			MainForm::staticButtonStopDebug->Invoke(actionStopDebug, gcnew array<Object^> {System::Boolean(true)});
+
+			delete vis;
+			vis = NULL;
 		}
 
 		static void LaunchSim(Object^ pathFile) {
@@ -300,8 +309,6 @@ namespace GUITD {
 			try {
 				sim = new Simulator((char*)(converter.marshal_as<const char*>((System::String^)pathFile)));
 				sim->launchSim();
-				delete sim;
-				sim = NULL;
 			}
 			catch (std::exception e) {
 				printErrorDelegate^ action = gcnew printErrorDelegate(&MainForm::printError);
@@ -311,6 +318,9 @@ namespace GUITD {
 			MainForm::staticButtonLaunchSim->Invoke(actionLaunchSim, gcnew array<Object^> {System::Boolean(true)});
 			displayButtonStopSimDelegate^ actionStopSim = gcnew displayButtonStopSimDelegate(&MainForm::displayButtonStopSim);
 			MainForm::staticButtonStopSim->Invoke(actionStopSim, gcnew array<Object^> {System::Boolean(true)});
+
+			delete sim;
+			sim = NULL;
 		}
 
 		delegate void displayButtonLaunchVisDelegate(System::Boolean launched);
@@ -359,7 +369,7 @@ namespace GUITD {
 					correctListMonitor[this->listLayer[i] - 1] = this->listMonitors[i];
 				}
 			}
-			array<Object^>^ listParams = gcnew array<Object^>{*(nbMonitors)-1, correctListMonitor, false, this->textBoxFilePropVis->Text, gcnew array<Color^>{}};
+			array<Object^>^ listParams = gcnew array<Object^>{*(nbMonitors)-1, correctListMonitor, false, this->textBoxFilePropVis->Text, gcnew array<Color^>{},this->textBoxFacColorCorOrient->Text};
 			this->visualizator = gcnew System::Threading::Thread(gcnew System::Threading::ParameterizedThreadStart(&MainForm::launchVisMode));
 			this->visualizator->Start(listParams);
 		}
@@ -467,6 +477,10 @@ namespace GUITD {
 			this->openFileDialogFP = (gcnew System::Windows::Forms::OpenFileDialog());
 			this->colorDialogDebug = (gcnew System::Windows::Forms::ColorDialog());
 			this->panelVis = (gcnew System::Windows::Forms::Panel());
+			this->buttonApplyChangeVis = (gcnew System::Windows::Forms::Button());
+			this->panelVisFacColCorOrient = (gcnew System::Windows::Forms::Panel());
+			this->textBoxFacColorCorOrient = (gcnew System::Windows::Forms::TextBox());
+			this->labelFactorColorCorOrient = (gcnew System::Windows::Forms::Label());
 			this->buttonStopVis = (gcnew System::Windows::Forms::Button());
 			this->buttonLaunchVis = (gcnew System::Windows::Forms::Button());
 			this->panelFilePropVis = (gcnew System::Windows::Forms::Panel());
@@ -486,6 +500,7 @@ namespace GUITD {
 			this->panelError->SuspendLayout();
 			this->panelSimulator->SuspendLayout();
 			this->panelVis->SuspendLayout();
+			this->panelVisFacColCorOrient->SuspendLayout();
 			this->panelFilePropVis->SuspendLayout();
 			this->SuspendLayout();
 			// 
@@ -951,6 +966,8 @@ namespace GUITD {
 			// 
 			this->panelVis->Anchor = static_cast<System::Windows::Forms::AnchorStyles>(((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Left)
 				| System::Windows::Forms::AnchorStyles::Right));
+			this->panelVis->Controls->Add(this->buttonApplyChangeVis);
+			this->panelVis->Controls->Add(this->panelVisFacColCorOrient);
 			this->panelVis->Controls->Add(this->buttonStopVis);
 			this->panelVis->Controls->Add(this->buttonLaunchVis);
 			this->panelVis->Controls->Add(this->panelFilePropVis);
@@ -959,6 +976,43 @@ namespace GUITD {
 			this->panelVis->Name = L"panelVis";
 			this->panelVis->Size = System::Drawing::Size(399, 158);
 			this->panelVis->TabIndex = 7;
+			// 
+			// buttonApplyChangeVis
+			// 
+			this->buttonApplyChangeVis->Location = System::Drawing::Point(148, 128);
+			this->buttonApplyChangeVis->Name = L"buttonApplyChangeVis";
+			this->buttonApplyChangeVis->Size = System::Drawing::Size(109, 25);
+			this->buttonApplyChangeVis->TabIndex = 8;
+			this->buttonApplyChangeVis->Text = L"Apply";
+			this->buttonApplyChangeVis->UseVisualStyleBackColor = true;
+			this->buttonApplyChangeVis->Visible = false;
+			this->buttonApplyChangeVis->Click += gcnew System::EventHandler(this, &MainForm::buttonApplyChangeVis_Click);
+			// 
+			// panelVisFacColCorOrient
+			// 
+			this->panelVisFacColCorOrient->Controls->Add(this->textBoxFacColorCorOrient);
+			this->panelVisFacColCorOrient->Controls->Add(this->labelFactorColorCorOrient);
+			this->panelVisFacColCorOrient->Location = System::Drawing::Point(8, 79);
+			this->panelVisFacColCorOrient->Name = L"panelVisFacColCorOrient";
+			this->panelVisFacColCorOrient->Size = System::Drawing::Size(284, 28);
+			this->panelVisFacColCorOrient->TabIndex = 7;
+			// 
+			// textBoxFacColorCorOrient
+			// 
+			this->textBoxFacColorCorOrient->Location = System::Drawing::Point(176, 4);
+			this->textBoxFacColorCorOrient->Name = L"textBoxFacColorCorOrient";
+			this->textBoxFacColorCorOrient->Size = System::Drawing::Size(100, 20);
+			this->textBoxFacColorCorOrient->TabIndex = 1;
+			this->textBoxFacColorCorOrient->TextChanged += gcnew System::EventHandler(this, &MainForm::textBoxFacColorCorOrient_TextChanged);
+			// 
+			// labelFactorColorCorOrient
+			// 
+			this->labelFactorColorCorOrient->AutoSize = true;
+			this->labelFactorColorCorOrient->Location = System::Drawing::Point(4, 7);
+			this->labelFactorColorCorOrient->Name = L"labelFactorColorCorOrient";
+			this->labelFactorColorCorOrient->Size = System::Drawing::Size(169, 13);
+			this->labelFactorColorCorOrient->TabIndex = 0;
+			this->labelFactorColorCorOrient->Text = L"Factor Color correction orientation:";
 			// 
 			// buttonStopVis
 			// 
@@ -1075,6 +1129,8 @@ namespace GUITD {
 			this->panelSimulator->PerformLayout();
 			this->panelVis->ResumeLayout(false);
 			this->panelVis->PerformLayout();
+			this->panelVisFacColCorOrient->ResumeLayout(false);
+			this->panelVisFacColCorOrient->PerformLayout();
 			this->panelFilePropVis->ResumeLayout(false);
 			this->panelFilePropVis->PerformLayout();
 			this->ResumeLayout(false);
@@ -1201,6 +1257,20 @@ private: System::Void buttonStopVis_Click(System::Object^ sender, System::EventA
 		this->buttonLaunchVis->Visible = true;
 		this->buttonStopVis->Visible = false;
 	}
+}
+private: System::Void textBoxFacColorCorOrient_TextChanged(System::Object^ sender, System::EventArgs^ e) {
+	if(vis != NULL)
+		this->buttonApplyChangeVis->Visible = true;
+}
+private: System::Void buttonApplyChangeVis_Click(System::Object^ sender, System::EventArgs^ e) {
+	//Apply change of the button
+	if (vis != NULL) {
+		this->vis->setFactorRmAdd(Convert::ToDouble(this->textBoxFacColorCorOrient->Text));
+	}
+	else {
+		this->printError("Impossible to apply change if no visualization started...");
+	}
+	this->buttonApplyChangeVis->Visible = false;
 }
 };
 }

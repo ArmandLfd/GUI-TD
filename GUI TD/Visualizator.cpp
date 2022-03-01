@@ -1,12 +1,16 @@
 #include "Visualizator.h"
 
-Visualizator::Visualizator(int nbOfMonitors,GLFWmonitor** listMonitors,bool isDebuggingMode, char* pathFileProp,double** colorChosenList) {
+Visualizator::Visualizator(int nbOfMonitors,GLFWmonitor** listMonitors,bool isDebuggingMode, char* pathFileProp,double** colorChosenList,double factorRmAdd) {
 	this->nbMonitors = nbOfMonitors;
 	this->sizeOfMonitors = sizeOfMonitors;
 	this->listMonitors = listMonitors;
 	this->isDebuggingMode = isDebuggingMode;
 	this->pathFileProp = pathFileProp;
 	this->colorChosenList = colorChosenList;
+	if (factorRmAdd == -1)
+		this->factorRmAdd = (double)nbOfMonitors;
+	else
+		this->factorRmAdd = factorRmAdd;
 }
 
 void Visualizator::buildLayer(int nbMonitor) {
@@ -141,6 +145,10 @@ void Visualizator::loadFileProp(char* pathFileProp) {
 	fclose(fp);
 }
 
+void Visualizator::setFactorRmAdd(double newFact) {
+	this->factorRmAdd = newFact;
+}
+
 void Visualizator::makeContext(int nbMonitor) {
 		glfwMakeContextCurrent(windows[nbMonitor]);
 }
@@ -243,7 +251,7 @@ void Visualizator::activateShader(int nbMonitor) {
 	glActiveTexture(GL_TEXTURE0);
 	glBindTexture(GL_TEXTURE_2D, texture[nbMonitor]);
 	//RemoveAdditive
-	glUniform1f(rmAddLoc, (GLfloat)this->nbMonitors);
+	glUniform1f(rmAddLoc, (GLfloat)this->factorRmAdd);
 }
 
 void Visualizator::draw(int nbMonitor) {

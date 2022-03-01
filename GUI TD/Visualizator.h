@@ -16,10 +16,11 @@ using namespace cv;
 class Visualizator
 {
 public:
-	Visualizator(int nbOfMonitors, GLFWmonitor** listMonitors, bool isDebuggingMode, char* pathFileProp = "", double** colorChosenList = NULL);
+	Visualizator(int nbOfMonitors, GLFWmonitor** listMonitors, bool isDebuggingMode, char* pathFileProp = "", double** colorChosenList = NULL, double factorRmAdd = -1);
 	~Visualizator();
 
 	void launchSim();
+	void setFactorRmAdd(double newFact);
 private:
 	void buildLayer(int nbMonitor);
 	void initEnv();
@@ -46,6 +47,7 @@ private:
 	int LayerNum;
 	char* pathToLayerImg;
 	int nowFrame = 0;
+	double factorRmAdd;
 
 	GLint texLoc, rmAddLoc = NULL;
 	unsigned int* texture;
