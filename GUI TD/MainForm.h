@@ -184,13 +184,18 @@ namespace GUITD {
 				System::Object^ nameDisplayString = System::String::Concat(gcnew array<System::String^>(3) {gcnew System::String(nameDisplay)," | ", gcnew System::String((i+1).ToString())});
 				this->listMonitorsLabel->Items->Add(nameDisplayString);
 				
+				const GLFWvidmode* modePrimMon;
 				if (listMonitors[i] == glfwGetPrimaryMonitor()) {
+					modePrimMon = glfwGetVideoMode(listMonitors[i]);
 					this->comboBoxLayer->Items->Add((-1).ToString());
 					listLayer[i] = -1;
 				}
 				else {
 					this->comboBoxLayer->Items->Add((i).ToString());
-					listLayer[i] = i;
+					const GLFWvidmode *mode = glfwGetVideoMode(listMonitors[i]);
+					int xPos, yPos;
+					glfwGetMonitorPos(listMonitors[i], &xPos, &yPos);
+					listLayer[i] = ((xPos-modePrimMon->width)/(mode->width))+1;
 				}
 
 				listColorDebug[i] = gcnew System::Drawing::Color();
