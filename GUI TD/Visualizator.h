@@ -16,11 +16,12 @@ using namespace cv;
 class Visualizator
 {
 public:
-	Visualizator(int nbOfMonitors, GLFWmonitor** listMonitors, bool isDebuggingMode, char* pathFileProp = "", double** colorChosenList = NULL, double factorRmAdd = -1);
+	Visualizator(int nbOfMonitors, GLFWmonitor** listMonitors, bool isDebuggingMode, char* pathFileProp = "", double** colorChosenList = NULL, double factorRmAdd = -1,int width = -1,int height = -1);
 	~Visualizator();
 
 	void launchSim();
 	void setFactorRmAdd(double newFact);
+	void setWindowsSize(int width, int height);
 private:
 	void buildLayer(int nbMonitor);
 	void initEnv();
@@ -41,6 +42,7 @@ private:
 	int* sizeOfMonitors;
 	int nbMonitors;
 	unsigned int* shaderProgram;
+	int widthWin, heightWin;
 
 	double** colorChosenList;
 	int Frame;

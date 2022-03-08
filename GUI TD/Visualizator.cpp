@@ -1,6 +1,6 @@
 #include "Visualizator.h"
 
-Visualizator::Visualizator(int nbOfMonitors,GLFWmonitor** listMonitors,bool isDebuggingMode, char* pathFileProp,double** colorChosenList,double factorRmAdd) {
+Visualizator::Visualizator(int nbOfMonitors,GLFWmonitor** listMonitors,bool isDebuggingMode, char* pathFileProp,double** colorChosenList,double factorRmAdd,int width,int height) {
 	this->nbMonitors = nbOfMonitors;
 	this->sizeOfMonitors = sizeOfMonitors;
 	this->listMonitors = listMonitors;
@@ -11,6 +11,8 @@ Visualizator::Visualizator(int nbOfMonitors,GLFWmonitor** listMonitors,bool isDe
 		this->factorRmAdd = (double)nbOfMonitors;
 	else
 		this->factorRmAdd = factorRmAdd;
+	this->widthWin = width;
+	this->heightWin = height;
 }
 
 void Visualizator::buildLayer(int nbMonitor) {
@@ -259,6 +261,16 @@ void Visualizator::draw(int nbMonitor) {
 	glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
 }
 
+void Visualizator::setWindowsSize(int width, int height) {
+	int xPos, yPos;
+	const GLFWvidmode* mode;
+	for (int i = 0; i < this->nbMonitors; i++) {
+		this->makeContext(i);
+		mode = glfwGetVideoMode(this->listMonitors[i]);
+		glfwGetMonitorPos(this->listMonitors[i], &xPos, &yPos);
+		glfwSetWindowMonitor(this->windows[i], NULL, xPos + (mode->width / 2 - width / 2), yPos + (mode->height / 2 - height / 2), width, height, mode->refreshRate);
+	}
+}
 
 void Visualizator::initEnv() {
 	if (!glfwInit()) {
@@ -277,13 +289,17 @@ void Visualizator::initEnv() {
 		glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
 		glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
 		glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
+		
+		int width = (widthWin != 1) ? widthWin : mode->width;
+		int height = (heightWin != 1) ? heightWin : mode->height;
+
 		if (i >= 1)
-			this->windows[i] = glfwCreateWindow(mode->width, mode->height, "Balec du nom", this->listMonitors[i], this->windows[i - 1]);
+			this->windows[i] = glfwCreateWindow(width,height, "Balec du nom", this->listMonitors[i], this->windows[i - 1]);
 		else
-			this->windows[i] = glfwCreateWindow(mode->width, mode->height, "Balec du nom", this->listMonitors[i], NULL);
+			this->windows[i] = glfwCreateWindow(width, height, "Balec du nom", this->listMonitors[i], NULL);
 		this->makeContext(i);
 		glfwGetMonitorPos(this->listMonitors[i], &xPos, &yPos);
-		glfwSetWindowMonitor(this->windows[i], NULL, xPos, yPos, mode->width, mode->height, mode->refreshRate);
+		glfwSetWindowMonitor(this->windows[i], NULL, xPos + (mode->width/2 - width/2), yPos + (mode->height / 2 - height / 2), width, height, mode->refreshRate);
 		if (this->windows[i] == NULL) {
 			throw std::runtime_error("Impossible to create a GLFW window for visualization.");
 		}

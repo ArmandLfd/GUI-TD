@@ -125,6 +125,10 @@ private: System::Windows::Forms::Panel^ panelVisFacColCorOrient;
 private: System::Windows::Forms::TextBox^ textBoxFacColorCorOrient;
 private: System::Windows::Forms::Label^ labelFactorColorCorOrient;
 private: System::Windows::Forms::Button^ buttonApplyChangeVis;
+private: System::Windows::Forms::Panel^ panel3;
+private: System::Windows::Forms::TextBox^ textBoxWidthSizeVis;
+private: System::Windows::Forms::Label^ labelWindowSiszeVis;
+private: System::Windows::Forms::TextBox^ textBoxHeightSizeVis;
 
 
 
@@ -202,6 +206,9 @@ private: System::Windows::Forms::Button^ buttonApplyChangeVis;
 					int xPos, yPos;
 					glfwGetMonitorPos(listMonitors[i], &xPos, &yPos);
 					listLayer[i] = ((xPos-modePrimMon->width)/(mode->width))+1;
+
+					this->textBoxWidthSizeVis->Text = mode->width.ToString();
+					this->textBoxHeightSizeVis->Text = mode->height.ToString();
 				}
 
 				listColorDebug[i] = gcnew System::Drawing::Color();
@@ -252,8 +259,17 @@ private: System::Windows::Forms::Button^ buttonApplyChangeVis;
 				//array<Color^>^ listColor = (array<Color^>^) tmpList[4]; //No need here
 				double** listColor_ptr = NULL;
 				double factorRmAdd = Convert::ToDouble(tmpList[5]);
-
-				vis = new Visualizator(nbMonitor, listMonitors, isDebuggingMode, path, listColor_ptr,factorRmAdd);
+				int width, height = -1;
+				if (sizeof(int) == 4) {
+					width = Convert::ToInt32(tmpList[6]);
+					height = Convert::ToInt32(tmpList[7]);
+				}
+				else {
+					width = Convert::ToInt64(tmpList[6]);
+					height = Convert::ToInt64(tmpList[7]);
+				}
+				
+				vis = new Visualizator(nbMonitor, listMonitors, isDebuggingMode, path, listColor_ptr,factorRmAdd,width,height);
 				vis->launchSim();
 			}
 			catch (std::exception e) {
@@ -369,7 +385,7 @@ private: System::Windows::Forms::Button^ buttonApplyChangeVis;
 					correctListMonitor[this->listLayer[i] - 1] = this->listMonitors[i];
 				}
 			}
-			array<Object^>^ listParams = gcnew array<Object^>{*(nbMonitors)-1, correctListMonitor, false, this->textBoxFilePropVis->Text, gcnew array<Color^>{},this->textBoxFacColorCorOrient->Text};
+			array<Object^>^ listParams = gcnew array<Object^>{*(nbMonitors)-1, correctListMonitor, false, this->textBoxFilePropVis->Text, gcnew array<Color^>{},this->textBoxFacColorCorOrient->Text,this->textBoxWidthSizeVis->Text, this->textBoxHeightSizeVis->Text};
 			this->visualizator = gcnew System::Threading::Thread(gcnew System::Threading::ParameterizedThreadStart(&MainForm::launchVisMode));
 			this->visualizator->Start(listParams);
 		}
@@ -477,6 +493,10 @@ private: System::Windows::Forms::Button^ buttonApplyChangeVis;
 			this->openFileDialogFP = (gcnew System::Windows::Forms::OpenFileDialog());
 			this->colorDialogDebug = (gcnew System::Windows::Forms::ColorDialog());
 			this->panelVis = (gcnew System::Windows::Forms::Panel());
+			this->panel3 = (gcnew System::Windows::Forms::Panel());
+			this->textBoxWidthSizeVis = (gcnew System::Windows::Forms::TextBox());
+			this->labelWindowSiszeVis = (gcnew System::Windows::Forms::Label());
+			this->textBoxHeightSizeVis = (gcnew System::Windows::Forms::TextBox());
 			this->buttonApplyChangeVis = (gcnew System::Windows::Forms::Button());
 			this->panelVisFacColCorOrient = (gcnew System::Windows::Forms::Panel());
 			this->textBoxFacColorCorOrient = (gcnew System::Windows::Forms::TextBox());
@@ -500,6 +520,7 @@ private: System::Windows::Forms::Button^ buttonApplyChangeVis;
 			this->panelError->SuspendLayout();
 			this->panelSimulator->SuspendLayout();
 			this->panelVis->SuspendLayout();
+			this->panel3->SuspendLayout();
 			this->panelVisFacColCorOrient->SuspendLayout();
 			this->panelFilePropVis->SuspendLayout();
 			this->SuspendLayout();
@@ -891,15 +912,15 @@ private: System::Windows::Forms::Button^ buttonApplyChangeVis;
 			this->panelSimulator->Controls->Add(this->labelFilePropTitle);
 			this->panelSimulator->Controls->Add(this->textBoxFileProp);
 			this->panelSimulator->Controls->Add(this->labelSimTitle);
-			this->panelSimulator->Location = System::Drawing::Point(11, 293);
+			this->panelSimulator->Location = System::Drawing::Point(11, 274);
 			this->panelSimulator->Name = L"panelSimulator";
-			this->panelSimulator->Size = System::Drawing::Size(315, 158);
+			this->panelSimulator->Size = System::Drawing::Size(315, 182);
 			this->panelSimulator->TabIndex = 11;
 			// 
 			// buttonStopSimulation
 			// 
 			this->buttonStopSimulation->BackColor = System::Drawing::Color::Brown;
-			this->buttonStopSimulation->Location = System::Drawing::Point(237, 129);
+			this->buttonStopSimulation->Location = System::Drawing::Point(234, 155);
 			this->buttonStopSimulation->Name = L"buttonStopSimulation";
 			this->buttonStopSimulation->Size = System::Drawing::Size(75, 23);
 			this->buttonStopSimulation->TabIndex = 17;
@@ -910,7 +931,7 @@ private: System::Windows::Forms::Button^ buttonApplyChangeVis;
 			// 
 			// buttonLaunchSim
 			// 
-			this->buttonLaunchSim->Location = System::Drawing::Point(8, 130);
+			this->buttonLaunchSim->Location = System::Drawing::Point(5, 156);
 			this->buttonLaunchSim->Name = L"buttonLaunchSim";
 			this->buttonLaunchSim->Size = System::Drawing::Size(75, 23);
 			this->buttonLaunchSim->TabIndex = 16;
@@ -966,20 +987,56 @@ private: System::Windows::Forms::Button^ buttonApplyChangeVis;
 			// 
 			this->panelVis->Anchor = static_cast<System::Windows::Forms::AnchorStyles>(((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Left)
 				| System::Windows::Forms::AnchorStyles::Right));
+			this->panelVis->Controls->Add(this->panel3);
 			this->panelVis->Controls->Add(this->buttonApplyChangeVis);
 			this->panelVis->Controls->Add(this->panelVisFacColCorOrient);
 			this->panelVis->Controls->Add(this->buttonStopVis);
 			this->panelVis->Controls->Add(this->buttonLaunchVis);
 			this->panelVis->Controls->Add(this->panelFilePropVis);
 			this->panelVis->Controls->Add(this->labelVisualizator);
-			this->panelVis->Location = System::Drawing::Point(332, 293);
+			this->panelVis->Location = System::Drawing::Point(332, 274);
 			this->panelVis->Name = L"panelVis";
-			this->panelVis->Size = System::Drawing::Size(399, 158);
+			this->panelVis->Size = System::Drawing::Size(399, 182);
 			this->panelVis->TabIndex = 7;
+			// 
+			// panel3
+			// 
+			this->panel3->Controls->Add(this->textBoxWidthSizeVis);
+			this->panel3->Controls->Add(this->labelWindowSiszeVis);
+			this->panel3->Controls->Add(this->textBoxHeightSizeVis);
+			this->panel3->Location = System::Drawing::Point(8, 120);
+			this->panel3->Name = L"panel3";
+			this->panel3->Size = System::Drawing::Size(173, 28);
+			this->panel3->TabIndex = 8;
+			// 
+			// textBoxWidthSizeVis
+			// 
+			this->textBoxWidthSizeVis->Location = System::Drawing::Point(79, 5);
+			this->textBoxWidthSizeVis->Name = L"textBoxWidthSizeVis";
+			this->textBoxWidthSizeVis->Size = System::Drawing::Size(37, 20);
+			this->textBoxWidthSizeVis->TabIndex = 5;
+			this->textBoxWidthSizeVis->TextChanged += gcnew System::EventHandler(this, &MainForm::textBoxWidthSizeVis_TextChanged);
+			// 
+			// labelWindowSiszeVis
+			// 
+			this->labelWindowSiszeVis->AutoSize = true;
+			this->labelWindowSiszeVis->Location = System::Drawing::Point(4, 7);
+			this->labelWindowSiszeVis->Name = L"labelWindowSiszeVis";
+			this->labelWindowSiszeVis->Size = System::Drawing::Size(72, 13);
+			this->labelWindowSiszeVis->TabIndex = 0;
+			this->labelWindowSiszeVis->Text = L"Window Size:";
+			// 
+			// textBoxHeightSizeVis
+			// 
+			this->textBoxHeightSizeVis->Location = System::Drawing::Point(122, 5);
+			this->textBoxHeightSizeVis->Name = L"textBoxHeightSizeVis";
+			this->textBoxHeightSizeVis->Size = System::Drawing::Size(37, 20);
+			this->textBoxHeightSizeVis->TabIndex = 4;
+			this->textBoxHeightSizeVis->TextChanged += gcnew System::EventHandler(this, &MainForm::textBoxHeightSizeVis_TextChanged);
 			// 
 			// buttonApplyChangeVis
 			// 
-			this->buttonApplyChangeVis->Location = System::Drawing::Point(148, 128);
+			this->buttonApplyChangeVis->Location = System::Drawing::Point(148, 154);
 			this->buttonApplyChangeVis->Name = L"buttonApplyChangeVis";
 			this->buttonApplyChangeVis->Size = System::Drawing::Size(109, 25);
 			this->buttonApplyChangeVis->TabIndex = 8;
@@ -1017,7 +1074,7 @@ private: System::Windows::Forms::Button^ buttonApplyChangeVis;
 			// buttonStopVis
 			// 
 			this->buttonStopVis->BackColor = System::Drawing::Color::DarkRed;
-			this->buttonStopVis->Location = System::Drawing::Point(299, 130);
+			this->buttonStopVis->Location = System::Drawing::Point(299, 156);
 			this->buttonStopVis->Name = L"buttonStopVis";
 			this->buttonStopVis->Size = System::Drawing::Size(97, 25);
 			this->buttonStopVis->TabIndex = 6;
@@ -1028,7 +1085,7 @@ private: System::Windows::Forms::Button^ buttonApplyChangeVis;
 			// 
 			// buttonLaunchVis
 			// 
-			this->buttonLaunchVis->Location = System::Drawing::Point(8, 128);
+			this->buttonLaunchVis->Location = System::Drawing::Point(8, 154);
 			this->buttonLaunchVis->Name = L"buttonLaunchVis";
 			this->buttonLaunchVis->Size = System::Drawing::Size(97, 25);
 			this->buttonLaunchVis->TabIndex = 5;
@@ -1129,6 +1186,8 @@ private: System::Windows::Forms::Button^ buttonApplyChangeVis;
 			this->panelSimulator->PerformLayout();
 			this->panelVis->ResumeLayout(false);
 			this->panelVis->PerformLayout();
+			this->panel3->ResumeLayout(false);
+			this->panel3->PerformLayout();
 			this->panelVisFacColCorOrient->ResumeLayout(false);
 			this->panelVisFacColCorOrient->PerformLayout();
 			this->panelFilePropVis->ResumeLayout(false);
@@ -1266,11 +1325,29 @@ private: System::Void buttonApplyChangeVis_Click(System::Object^ sender, System:
 	//Apply change of the button
 	if (vis != NULL) {
 		this->vis->setFactorRmAdd(Convert::ToDouble(this->textBoxFacColorCorOrient->Text));
+		int width, height = -1;
+		if (sizeof(int) == 4) {
+			width = Convert::ToInt32(this->textBoxWidthSizeVis->Text);
+			height = Convert::ToInt32(this->textBoxHeightSizeVis->Text);
+		}
+		else {
+			width = Convert::ToInt64(this->textBoxWidthSizeVis->Text);
+			height = Convert::ToInt64(this->textBoxHeightSizeVis->Text);
+		}
+		this->vis->setWindowsSize(width, height);
 	}
 	else {
 		this->printError("Impossible to apply change if no visualization started...");
 	}
 	this->buttonApplyChangeVis->Visible = false;
+}
+private: System::Void textBoxWidthSizeVis_TextChanged(System::Object^ sender, System::EventArgs^ e) {
+	if (vis != NULL)
+		this->buttonApplyChangeVis->Visible = true;
+}
+private: System::Void textBoxHeightSizeVis_TextChanged(System::Object^ sender, System::EventArgs^ e) {
+	if (vis != NULL)
+		this->buttonApplyChangeVis->Visible = true;
 }
 };
 }
