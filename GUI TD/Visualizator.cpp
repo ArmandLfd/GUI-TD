@@ -266,6 +266,8 @@ void Visualizator::setWindowsSize(int width, int height) {
 	const GLFWvidmode* mode;
 	for (int i = 0; i < this->nbMonitors; i++) {
 		this->makeContext(i);
+		glfwSetWindowSize(windows[i], width, height);
+		glViewport(0, 0, width, height);
 		mode = glfwGetVideoMode(this->listMonitors[i]);
 		glfwGetMonitorPos(this->listMonitors[i], &xPos, &yPos);
 		glfwSetWindowMonitor(this->windows[i], NULL, xPos + (mode->width / 2 - width / 2), yPos + (mode->height / 2 - height / 2), width, height, mode->refreshRate);
@@ -290,14 +292,15 @@ void Visualizator::initEnv() {
 		glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
 		glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
 		
-		int width = (widthWin != 1) ? widthWin : mode->width;
-		int height = (heightWin != 1) ? heightWin : mode->height;
+		int width = (widthWin != -1) ? widthWin : mode->width;
+		int height = (heightWin != -1) ? heightWin : mode->height;
 
 		if (i >= 1)
-			this->windows[i] = glfwCreateWindow(width,height, "Balec du nom", this->listMonitors[i], this->windows[i - 1]);
+			this->windows[i] = glfwCreateWindow(mode->width,mode->height, "Balec du nom", this->listMonitors[i], this->windows[i - 1]);
 		else
-			this->windows[i] = glfwCreateWindow(width, height, "Balec du nom", this->listMonitors[i], NULL);
+			this->windows[i] = glfwCreateWindow(mode->width, mode->height, "Balec du nom", this->listMonitors[i], NULL);
 		this->makeContext(i);
+		glfwSetWindowSize(windows[i], width, height);
 		glfwGetMonitorPos(this->listMonitors[i], &xPos, &yPos);
 		glfwSetWindowMonitor(this->windows[i], NULL, xPos + (mode->width/2 - width/2), yPos + (mode->height / 2 - height / 2), width, height, mode->refreshRate);
 		if (this->windows[i] == NULL) {
@@ -308,6 +311,7 @@ void Visualizator::initEnv() {
 		{
 			throw std::runtime_error("Impossible to initialize GLAD for visualization.");
 		}
+		glViewport(0, 0, width, height);
 	}
 
 	shaderProgram = new unsigned int[this->nbMonitors];

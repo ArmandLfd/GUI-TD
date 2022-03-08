@@ -181,7 +181,7 @@ private: System::Windows::Forms::TextBox^ textBoxHeightSizeVis;
 			}
 			this->listMonitors = glfwGetMonitors(nbMonitors);
 
-			this->textBoxFacColorCorOrient->Text = (*nbMonitors).ToString();
+			this->textBoxFacColorCorOrient->Text = ((*nbMonitors)-1).ToString();
 			this->buttonApplyChangeVis->Visible = false;
 
 			if (listLayer != NULL)
@@ -1298,6 +1298,11 @@ private: System::Void buttonFilePropVis_Click(System::Object^ sender, System::Ev
 	}
 }
 private: System::Void buttonLaunchVis_Click(System::Object^ sender, System::EventArgs^ e) {
+	if (System::String::IsNullOrEmpty(this->textBoxFilePropVis->Text)) {
+		this->printError("Impossible to launch visualization whithout file property...");
+		return;
+	}
+		
 	if (vis != NULL) {
 		this->printError("Impossible to launch visualization if already one started...");
 	}
