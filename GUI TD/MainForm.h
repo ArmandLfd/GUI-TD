@@ -129,6 +129,14 @@ private: System::Windows::Forms::Panel^ panel3;
 private: System::Windows::Forms::TextBox^ textBoxWidthSizeVis;
 private: System::Windows::Forms::Label^ labelWindowSiszeVis;
 private: System::Windows::Forms::TextBox^ textBoxHeightSizeVis;
+private: System::Windows::Forms::Panel^ panel4;
+private: System::Windows::Forms::Panel^ panel5;
+private: System::Windows::Forms::CheckBox^ checkBoxResolution;
+private: System::Windows::Forms::CheckBox^ checkBoxVideoMode;
+
+
+
+
 
 
 
@@ -181,9 +189,13 @@ private: System::Windows::Forms::TextBox^ textBoxHeightSizeVis;
 			}
 			this->listMonitors = glfwGetMonitors(nbMonitors);
 
-			this->textBoxFacColorCorOrient->Text = ((*nbMonitors)-1).ToString();
+			//this->textBoxFacColorCorOrient->Text = ((*nbMonitors)-1).ToString();
+			this->textBoxFacColorCorOrient->Text = "1";
 			this->buttonApplyChangeVis->Visible = false;
-
+			this->checkBoxResolution->Checked = true;
+			this->textBoxHeightSizeVis->Enabled = false;
+			this->textBoxWidthSizeVis->Enabled = false;
+			
 			if (listLayer != NULL)
 				delete[] listLayer;
 			listLayer = new int[*nbMonitors];
@@ -207,8 +219,10 @@ private: System::Windows::Forms::TextBox^ textBoxHeightSizeVis;
 					glfwGetMonitorPos(listMonitors[i], &xPos, &yPos);
 					listLayer[i] = ((xPos-modePrimMon->width)/(mode->width))+1;
 
-					this->textBoxWidthSizeVis->Text = mode->width.ToString();
-					this->textBoxHeightSizeVis->Text = mode->height.ToString();
+					if(!textBoxHeightSizeVis->ReadOnly){
+						this->textBoxWidthSizeVis->Text = mode->width.ToString();
+						this->textBoxHeightSizeVis->Text = mode->height.ToString();
+					}
 				}
 
 				listColorDebug[i] = gcnew System::Drawing::Color();
@@ -268,8 +282,8 @@ private: System::Windows::Forms::TextBox^ textBoxHeightSizeVis;
 					width = Convert::ToInt64(tmpList[6]);
 					height = Convert::ToInt64(tmpList[7]);
 				}
-				
-				vis = new Visualizator(nbMonitor, listMonitors, isDebuggingMode, path, listColor_ptr,factorRmAdd,width,height);
+				bool isVideoMode = Convert::ToBoolean(tmpList[8]);
+				vis = new Visualizator(nbMonitor, listMonitors, isDebuggingMode, path, listColor_ptr,factorRmAdd,width,height,isVideoMode);
 				vis->launchSim();
 			}
 			catch (std::exception e) {
@@ -385,7 +399,13 @@ private: System::Windows::Forms::TextBox^ textBoxHeightSizeVis;
 					correctListMonitor[this->listLayer[i] - 1] = this->listMonitors[i];
 				}
 			}
-			array<Object^>^ listParams = gcnew array<Object^>{*(nbMonitors)-1, correctListMonitor, false, this->textBoxFilePropVis->Text, gcnew array<Color^>{},this->textBoxFacColorCorOrient->Text,this->textBoxWidthSizeVis->Text, this->textBoxHeightSizeVis->Text};
+			System::String^ widthString = this->textBoxWidthSizeVis->Text;
+			System::String^ heightString = this->textBoxHeightSizeVis->Text;
+			if (checkBoxResolution->Checked) {
+				widthString = "-2";
+				heightString = "-2";
+			}
+			array<Object^>^ listParams = gcnew array<Object^>{*(nbMonitors)-1, correctListMonitor, false, this->textBoxFilePropVis->Text, gcnew array<Color^>{},this->textBoxFacColorCorOrient->Text,widthString,heightString,checkBoxVideoMode->Checked};
 			this->visualizator = gcnew System::Threading::Thread(gcnew System::Threading::ParameterizedThreadStart(&MainForm::launchVisMode));
 			this->visualizator->Start(listParams);
 		}
@@ -493,6 +513,10 @@ private: System::Windows::Forms::TextBox^ textBoxHeightSizeVis;
 			this->openFileDialogFP = (gcnew System::Windows::Forms::OpenFileDialog());
 			this->colorDialogDebug = (gcnew System::Windows::Forms::ColorDialog());
 			this->panelVis = (gcnew System::Windows::Forms::Panel());
+			this->panel5 = (gcnew System::Windows::Forms::Panel());
+			this->checkBoxResolution = (gcnew System::Windows::Forms::CheckBox());
+			this->panel4 = (gcnew System::Windows::Forms::Panel());
+			this->checkBoxVideoMode = (gcnew System::Windows::Forms::CheckBox());
 			this->panel3 = (gcnew System::Windows::Forms::Panel());
 			this->textBoxWidthSizeVis = (gcnew System::Windows::Forms::TextBox());
 			this->labelWindowSiszeVis = (gcnew System::Windows::Forms::Label());
@@ -520,6 +544,8 @@ private: System::Windows::Forms::TextBox^ textBoxHeightSizeVis;
 			this->panelError->SuspendLayout();
 			this->panelSimulator->SuspendLayout();
 			this->panelVis->SuspendLayout();
+			this->panel5->SuspendLayout();
+			this->panel4->SuspendLayout();
 			this->panel3->SuspendLayout();
 			this->panelVisFacColCorOrient->SuspendLayout();
 			this->panelFilePropVis->SuspendLayout();
@@ -987,6 +1013,8 @@ private: System::Windows::Forms::TextBox^ textBoxHeightSizeVis;
 			// 
 			this->panelVis->Anchor = static_cast<System::Windows::Forms::AnchorStyles>(((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Left)
 				| System::Windows::Forms::AnchorStyles::Right));
+			this->panelVis->Controls->Add(this->panel5);
+			this->panelVis->Controls->Add(this->panel4);
 			this->panelVis->Controls->Add(this->panel3);
 			this->panelVis->Controls->Add(this->buttonApplyChangeVis);
 			this->panelVis->Controls->Add(this->panelVisFacColCorOrient);
@@ -999,12 +1027,51 @@ private: System::Windows::Forms::TextBox^ textBoxHeightSizeVis;
 			this->panelVis->Size = System::Drawing::Size(399, 182);
 			this->panelVis->TabIndex = 7;
 			// 
+			// panel5
+			// 
+			this->panel5->Anchor = System::Windows::Forms::AnchorStyles::Top;
+			this->panel5->Controls->Add(this->checkBoxResolution);
+			this->panel5->Location = System::Drawing::Point(12, 120);
+			this->panel5->Name = L"panel5";
+			this->panel5->Size = System::Drawing::Size(103, 28);
+			this->panel5->TabIndex = 10;
+			// 
+			// checkBoxResolution
+			// 
+			this->checkBoxResolution->AutoSize = true;
+			this->checkBoxResolution->Location = System::Drawing::Point(3, 5);
+			this->checkBoxResolution->Name = L"checkBoxResolution";
+			this->checkBoxResolution->Size = System::Drawing::Size(96, 17);
+			this->checkBoxResolution->TabIndex = 1;
+			this->checkBoxResolution->Text = L"Img Resolution";
+			this->checkBoxResolution->UseVisualStyleBackColor = true;
+			this->checkBoxResolution->CheckedChanged += gcnew System::EventHandler(this, &MainForm::checkBoxResolution_CheckedChanged);
+			// 
+			// panel4
+			// 
+			this->panel4->Anchor = System::Windows::Forms::AnchorStyles::Top;
+			this->panel4->Controls->Add(this->checkBoxVideoMode);
+			this->panel4->Location = System::Drawing::Point(297, 120);
+			this->panel4->Name = L"panel4";
+			this->panel4->Size = System::Drawing::Size(92, 28);
+			this->panel4->TabIndex = 9;
+			// 
+			// checkBoxVideoMode
+			// 
+			this->checkBoxVideoMode->AutoSize = true;
+			this->checkBoxVideoMode->Location = System::Drawing::Point(3, 5);
+			this->checkBoxVideoMode->Name = L"checkBoxVideoMode";
+			this->checkBoxVideoMode->Size = System::Drawing::Size(83, 17);
+			this->checkBoxVideoMode->TabIndex = 1;
+			this->checkBoxVideoMode->Text = L"Video Mode";
+			this->checkBoxVideoMode->UseVisualStyleBackColor = true;
+			// 
 			// panel3
 			// 
 			this->panel3->Controls->Add(this->textBoxWidthSizeVis);
 			this->panel3->Controls->Add(this->labelWindowSiszeVis);
 			this->panel3->Controls->Add(this->textBoxHeightSizeVis);
-			this->panel3->Location = System::Drawing::Point(8, 120);
+			this->panel3->Location = System::Drawing::Point(117, 120);
 			this->panel3->Name = L"panel3";
 			this->panel3->Size = System::Drawing::Size(173, 28);
 			this->panel3->TabIndex = 8;
@@ -1186,6 +1253,10 @@ private: System::Windows::Forms::TextBox^ textBoxHeightSizeVis;
 			this->panelSimulator->PerformLayout();
 			this->panelVis->ResumeLayout(false);
 			this->panelVis->PerformLayout();
+			this->panel5->ResumeLayout(false);
+			this->panel5->PerformLayout();
+			this->panel4->ResumeLayout(false);
+			this->panel4->PerformLayout();
 			this->panel3->ResumeLayout(false);
 			this->panel3->PerformLayout();
 			this->panelVisFacColCorOrient->ResumeLayout(false);
@@ -1310,6 +1381,7 @@ private: System::Void buttonLaunchVis_Click(System::Object^ sender, System::Even
 		this->initVisMode();
 		this->buttonLaunchVis->Visible = false;
 		this->buttonStopVis->Visible = true;
+		this->checkBoxVideoMode->Enabled = false;
 	}
 }
 private: System::Void buttonStopVis_Click(System::Object^ sender, System::EventArgs^ e) {
@@ -1320,6 +1392,7 @@ private: System::Void buttonStopVis_Click(System::Object^ sender, System::EventA
 		this->finishVis();
 		this->buttonLaunchVis->Visible = true;
 		this->buttonStopVis->Visible = false;
+		this->checkBoxVideoMode->Enabled = true;
 	}
 }
 private: System::Void textBoxFacColorCorOrient_TextChanged(System::Object^ sender, System::EventArgs^ e) {
@@ -1331,7 +1404,11 @@ private: System::Void buttonApplyChangeVis_Click(System::Object^ sender, System:
 	if (vis != NULL) {
 		this->vis->setFactorRmAdd(Convert::ToDouble(this->textBoxFacColorCorOrient->Text));
 		int width, height = -1;
-		if (sizeof(int) == 4) {
+		if (checkBoxResolution->Checked) {
+			width = -2;
+			height = -2;
+		}
+		else if (sizeof(int) == 4) {
 			width = Convert::ToInt32(this->textBoxWidthSizeVis->Text);
 			height = Convert::ToInt32(this->textBoxHeightSizeVis->Text);
 		}
@@ -1352,6 +1429,30 @@ private: System::Void textBoxWidthSizeVis_TextChanged(System::Object^ sender, Sy
 }
 private: System::Void textBoxHeightSizeVis_TextChanged(System::Object^ sender, System::EventArgs^ e) {
 	if (vis != NULL)
+		this->buttonApplyChangeVis->Visible = true;
+}
+private: System::Void label1_Click_1(System::Object^ sender, System::EventArgs^ e) {
+}
+private: System::Void checkBoxResolution_CheckedChanged(System::Object^ sender, System::EventArgs^ e) {
+	if (!checkBoxResolution->Checked) {
+		textBoxHeightSizeVis->Enabled = true;
+		textBoxWidthSizeVis->Enabled = true;
+		for (int i = 0; i < *nbMonitors; i++) {
+			if (listMonitors[i] != glfwGetPrimaryMonitor()) {
+				const GLFWvidmode* mode = glfwGetVideoMode(listMonitors[i]);
+				textBoxHeightSizeVis->Text = mode->height.ToString();
+				textBoxWidthSizeVis->Text = mode->width.ToString();
+				break;
+			}
+		}
+	}
+	else {
+		textBoxHeightSizeVis->Enabled = false;
+		textBoxWidthSizeVis->Enabled = false;
+		textBoxHeightSizeVis->Text = "";
+		textBoxWidthSizeVis->Text = "";
+	}
+	if(vis != NULL)
 		this->buttonApplyChangeVis->Visible = true;
 }
 };

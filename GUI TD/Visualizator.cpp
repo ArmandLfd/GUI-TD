@@ -1,18 +1,21 @@
 #include "Visualizator.h"
 
-Visualizator::Visualizator(int nbOfMonitors,GLFWmonitor** listMonitors,bool isDebuggingMode, char* pathFileProp,double** colorChosenList,double factorRmAdd,int width,int height) {
+Visualizator::Visualizator(int nbOfMonitors,GLFWmonitor** listMonitors,bool isDebuggingMode, char* pathFileProp,double** colorChosenList,double factorRmAdd,int width,int height,bool isVideoMode) {
 	this->nbMonitors = nbOfMonitors;
 	this->sizeOfMonitors = sizeOfMonitors;
 	this->listMonitors = listMonitors;
 	this->isDebuggingMode = isDebuggingMode;
 	this->pathFileProp = pathFileProp;
 	this->colorChosenList = colorChosenList;
-	if (factorRmAdd == -1)
-		this->factorRmAdd = (double)nbOfMonitors;
+	if (factorRmAdd == -1){
+		//this->factorRmAdd = (double)nbOfMonitors;
+		this->factorRmAdd = 1.0;
+	}
 	else
 		this->factorRmAdd = factorRmAdd;
 	this->widthWin = width;
 	this->heightWin = height;
+	this->isVideoMode = isVideoMode;
 }
 
 void Visualizator::buildLayer(int nbMonitor) {
@@ -75,7 +78,8 @@ void Visualizator::loadTexture(int nbMonitor) {
 }
 
 void Visualizator::applyTexture(int nbMonitor) {
-	if ((!texImg[nbMonitor].empty()) && this->Frame > 1) {
+	//int idxForTexImg = nbMonitor*(1 + isVideoMode*frameVideo);
+	if (((!texImg[nbMonitor].empty()) && this->Frame > 1) || isVideoMode) {
 		this->texImg[nbMonitor].release();
 	}
 
@@ -87,7 +91,7 @@ void Visualizator::applyTexture(int nbMonitor) {
 	else {
 		if (this->Frame > 1 || texImg[nbMonitor].empty()) {
 			char* pathToLoad = this->constructStringPath(nbMonitor);
-			texImg[nbMonitor] = imread(pathToLoad, IMREAD_COLOR);
+			texImg[nbMonitor] =  imread(pathToLoad, IMREAD_COLOR);
 			delete(pathToLoad);
 			if (!texImg[nbMonitor].empty()) {
 				flip(texImg[nbMonitor], texImg[nbMonitor], 0);
@@ -99,6 +103,10 @@ void Visualizator::applyTexture(int nbMonitor) {
 				sprintf(errorMsg, "Impossible to load image in visualizator:\n %s", pathToLoad);
 				throw std::invalid_argument(errorMsg);
 			}
+			if (resolutionImage) {
+				this->setWindowsSize(-2,-2);
+				resolutionImage = false;
+			}
 		}
 	}
 	glBindTexture(GL_TEXTURE_2D, texture[nbMonitor]);
@@ -108,14 +116,17 @@ void Visualizator::applyTexture(int nbMonitor) {
 
 char* Visualizator::constructStringPath(int nbMonitor) {
 	char* filename = new char[252];
-	sprintf(filename, "%s\\layer-%d-%d.png", this->pathToLayerImg, nbMonitor, this->nowFrame);
+	if(!isVideoMode)
+		sprintf(filename, "%s\\layer-%d-%d.png", this->pathToLayerImg, nbMonitor, this->nowFrame);
+	else
+		sprintf(filename, "%s\\frameVideo-%d\\layer-%d-%d.png", this->pathToFrameDir, this->frameVideo,nbMonitor, this->nowFrame);
 	return filename;
 }
 
 void Visualizator::loadFileProp(char* pathFileProp) {
 	FILE* fp;
-	const int numberArgs = 9;
-	const char* listOption[] = { "MODE","VERTICAL_VIEWNUM","HORIZONTAL_VIEWNUM","LAYER_NUM","FRAME","BRIGHTNESS","ITERATION","LOAD_FILENAME","SAVE_FILENAME" };
+	const int numberArgs = 11;
+	const char* listOption[] = { "MODE","VERTICAL_VIEWNUM","HORIZONTAL_VIEWNUM","LAYER_NUM","FRAME","BRIGHTNESS","ITERATION","LOAD_FILENAME","SAVE_FILENAME","FRAME_DIR","FRAME_VIDEO"};
 	char* listArgs[numberArgs];
 	for (int i = 0; i < numberArgs; i++)
 		listArgs[i] = new char[128];
@@ -129,7 +140,7 @@ void Visualizator::loadFileProp(char* pathFileProp) {
 
 	int result;
 	char argFromFile[128];
-	for (int i = 0; i < numberArgs; i++) {
+	for (int i = 0; i < ((isVideoMode) ? numberArgs : numberArgs-2); i++) {
 		result = fscanf(fp, "%s\t%s", argFromFile, listArgs[i]);
 		if (result < 2 || std::strcmp(argFromFile, listOption[i]) != NULL) {
 			char errorMsg[252];
@@ -139,10 +150,14 @@ void Visualizator::loadFileProp(char* pathFileProp) {
 	}
 	this->LayerNum = std::strtol(listArgs[3], NULL, 10);
 	this->Frame = std::strtol(listArgs[4], NULL, 10);
-	this->pathToLayerImg = listArgs[numberArgs - 1];
+	this->pathToLayerImg = listArgs[8];
+	this->pathToFrameDir = (isVideoMode) ? listArgs[9] : NULL;
+	this->framesVideo = (isVideoMode) ? std::strtol(listArgs[10],NULL,10) : 1;
 
-	for (int i = 0; i < numberArgs - 1; i++)
-		delete listArgs[i];
+	for (int i = 0; i < numberArgs; i++) {
+		if(i != 8 && i != 9)
+			delete listArgs[i];
+	}
 
 	fclose(fp);
 }
@@ -213,6 +228,7 @@ void Visualizator::launchSim() {
 		frameCount++;
 		this->printFps(&frameCount,&initTime);
 		this->nowFrame = (this->nowFrame + 1) % this->Frame;
+		this->frameVideo = (this->frameVideo + 1) % this->framesVideo;
 		//Events
 		glfwPollEvents();
 	}
@@ -264,6 +280,10 @@ void Visualizator::draw(int nbMonitor) {
 void Visualizator::setWindowsSize(int width, int height) {
 	int xPos, yPos;
 	const GLFWvidmode* mode;
+	if (width == -2 && height == -2) {
+		width = texImg[0].size[1];
+		height = texImg[0].size[0];
+	}
 	for (int i = 0; i < this->nbMonitors; i++) {
 		this->makeContext(i);
 		glfwSetWindowSize(windows[i], width, height);
@@ -292,8 +312,9 @@ void Visualizator::initEnv() {
 		glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);
 		glfwWindowHint(GLFW_REFRESH_RATE, mode->refreshRate);
 		
-		int width = (widthWin != -1) ? widthWin : mode->width;
-		int height = (heightWin != -1) ? heightWin : mode->height;
+		int width = (widthWin >= 0) ? widthWin : mode->width;
+		int height = (heightWin >= 0) ? heightWin : mode->height;
+		resolutionImage = (widthWin == -2 || heightWin == -2);
 
 		if (i >= 1)
 			this->windows[i] = glfwCreateWindow(mode->width,mode->height, "Balec du nom", this->listMonitors[i], this->windows[i - 1]);
@@ -321,7 +342,7 @@ void Visualizator::initEnv() {
 	EBO = new unsigned int[this->nbMonitors];
 
 	texture = new unsigned int[this->nbMonitors];
-	this->texImg = new Mat[this->nbMonitors];
+	this->texImg = new Mat[this->nbMonitors *(1+nbOfFramesCanBeLoaded*isVideoMode)];
 }
 
 

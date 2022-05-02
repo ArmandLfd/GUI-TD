@@ -16,7 +16,7 @@ using namespace cv;
 class Visualizator
 {
 public:
-	Visualizator(int nbOfMonitors, GLFWmonitor** listMonitors, bool isDebuggingMode, char* pathFileProp = "", double** colorChosenList = NULL, double factorRmAdd = -1,int width = -1,int height = -1);
+	Visualizator(int nbOfMonitors, GLFWmonitor** listMonitors, bool isDebuggingMode, char* pathFileProp = "", double** colorChosenList = NULL, double factorRmAdd = -1,int width = -1,int height = -1,bool isVideoMode = false);
 	~Visualizator();
 
 	void launchSim();
@@ -37,17 +37,20 @@ private:
 	void printFps(int* frameCount, double* previousTime);
 
 	char* pathFileProp;
+	char* pathToFrameDir;
 	GLFWwindow** windows;
 	GLFWmonitor** listMonitors;
 	int* sizeOfMonitors;
 	int nbMonitors;
 	unsigned int* shaderProgram;
 	int widthWin, heightWin;
+	bool resolutionImage,isVideoMode;
 
 	double** colorChosenList;
-	int Frame;
+	int Frame,framesVideo;
 	int LayerNum;
 	char* pathToLayerImg;
+	int frameVideo = 0;
 	int nowFrame = 0;
 	double factorRmAdd;
 
@@ -56,6 +59,7 @@ private:
 	Mat* texImg;
 	unsigned int* VBO, * VAO, * EBO;
 
+	const int nbOfFramesCanBeLoaded = 6;
 	bool isDebuggingMode;
 
 	GLchar* vertexShaderSource = "#version 330 core\n"
