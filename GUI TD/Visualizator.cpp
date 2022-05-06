@@ -307,6 +307,8 @@ void Visualizator::initEnv() {
 	int xPos, yPos;
 	for (int i = 0; i < this->nbMonitors; i++) {
 		const GLFWvidmode* mode = glfwGetVideoMode(this->listMonitors[i]);
+		if (mode == NULL)
+			throw std::runtime_error("Impossible to get VideoMode...");
 		glfwWindowHint(GLFW_RED_BITS, mode->redBits);
 		glfwWindowHint(GLFW_GREEN_BITS, mode->greenBits);
 		glfwWindowHint(GLFW_BLUE_BITS, mode->blueBits);

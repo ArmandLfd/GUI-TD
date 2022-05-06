@@ -391,7 +391,7 @@ private: System::Windows::Forms::CheckBox^ checkBoxVideoMode;
 
 		void initVisMode() {
 			if (*(nbMonitors)-1 <= 0)
-				throw std::runtime_error("Impossible to launch a debug visualizator if there is only one monitor...");
+				throw std::runtime_error("Impossible to launch a visualizator if there is only one monitor...");
 
 			array<GLFWmonitor*>^ correctListMonitor = gcnew array<GLFWmonitor*>(*(nbMonitors)-1);
 			for (int i = 0; i < *nbMonitors; i++) {
@@ -1440,8 +1440,8 @@ private: System::Void checkBoxResolution_CheckedChanged(System::Object^ sender, 
 		for (int i = 0; i < *nbMonitors; i++) {
 			if (listMonitors[i] != glfwGetPrimaryMonitor()) {
 				const GLFWvidmode* mode = glfwGetVideoMode(listMonitors[i]);
-				textBoxHeightSizeVis->Text = mode->height.ToString();
-				textBoxWidthSizeVis->Text = mode->width.ToString();
+				textBoxHeightSizeVis->Text = ((9 * mode->height)/10).ToString();
+				textBoxWidthSizeVis->Text = ((9 * mode->width)/10).ToString();
 				break;
 			}
 		}
