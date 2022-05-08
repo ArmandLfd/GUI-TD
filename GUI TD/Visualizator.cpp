@@ -318,17 +318,23 @@ void Visualizator::initEnv() {
 		int height = (heightWin >= 0) ? heightWin : mode->height;
 		resolutionImage = (widthWin == -2 || heightWin == -2);
 
-		if (i >= 1)
-			this->windows[i] = glfwCreateWindow(mode->width,mode->height, "Balec du nom", this->listMonitors[i], this->windows[i - 1]);
-		else
-			this->windows[i] = glfwCreateWindow(mode->width, mode->height, "Balec du nom", this->listMonitors[i], NULL);
+		try{
+			if (i >= 1)
+				this->windows[i] = glfwCreateWindow(mode->width,mode->height, "Balec du nom", this->listMonitors[i], this->windows[i - 1]);
+			else
+				this->windows[i] = glfwCreateWindow(mode->width, mode->height, "Balec du nom", this->listMonitors[i], NULL);
+		}
+		catch (Exception e) {
+			printf(e.what());
+			throw std::runtime_error("Impossible to create a GLFW window for visualization.");
+		}
+		if (this->windows[i] == NULL) {
+			throw std::runtime_error("Impossible to create a GLFW window for visualization.");
+		}
 		this->makeContext(i);
 		glfwSetWindowSize(windows[i], width, height);
 		glfwGetMonitorPos(this->listMonitors[i], &xPos, &yPos);
 		glfwSetWindowMonitor(this->windows[i], NULL, xPos + (mode->width/2 - width/2), yPos + (mode->height / 2 - height / 2), width, height, mode->refreshRate);
-		if (this->windows[i] == NULL) {
-			throw std::runtime_error("Impossible to create a GLFW window for visualization.");
-		}
 		//Glad
 		if (!gladLoadGLLoader((GLADloadproc)glfwGetProcAddress))
 		{

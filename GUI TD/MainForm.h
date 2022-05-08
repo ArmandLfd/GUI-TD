@@ -174,6 +174,7 @@ private: System::Windows::Forms::CheckBox^ checkBoxVideoMode;
 		System::Threading::Thread^ simulation, ^visualizator, ^debugVis;
 		static System::Windows::Forms::Label^ staticLabelError;
 		static System::Windows::Forms::Button^ staticButtonLaunchSim, ^staticButtonStopSim,^staticButtonLaunchDebug,^staticButtonStopDebug,^staticButtonLaunchVis, ^staticButtonStopVis;
+		static System::Windows::Forms::CheckBox^ staticCheckBoxVideoMode;
 		array<System::Drawing::Color^>^ listColorDebug;
 		static Visualizator* vis = NULL;
 		static Simulator* sim = NULL;
@@ -371,10 +372,12 @@ private: System::Windows::Forms::CheckBox^ checkBoxVideoMode;
 
 		static void displayButtonLaunchVis(System::Boolean launched) {
 			MainForm::staticButtonLaunchVis->Visible = launched;
+			MainForm::staticCheckBoxVideoMode->Enabled = launched;
 		}
 
 		static void displayButtonStopVis(System::Boolean launched) {
 			MainForm::staticButtonStopVis->Visible = !launched;
+			MainForm::staticCheckBoxVideoMode->Enabled = !launched;
 		}
 
 		static void displayButtonLaunchDebug(System::Boolean launched) {
@@ -402,10 +405,11 @@ private: System::Windows::Forms::CheckBox^ checkBoxVideoMode;
 			System::String^ widthString = this->textBoxWidthSizeVis->Text;
 			System::String^ heightString = this->textBoxHeightSizeVis->Text;
 			if (checkBoxResolution->Checked) {
-				widthString = "-2";
-				heightString = "-2";
+				widthString = gcnew System::String("-2");
+				heightString = gcnew System::String("-2");
 			}
-			array<Object^>^ listParams = gcnew array<Object^>{*(nbMonitors)-1, correctListMonitor, false, this->textBoxFilePropVis->Text, gcnew array<Color^>{},this->textBoxFacColorCorOrient->Text,widthString,heightString,checkBoxVideoMode->Checked};
+			System::Boolean^ checked = gcnew System::Boolean(checkBoxVideoMode->Checked);
+			array<Object^>^ listParams = gcnew array<Object^>{*(nbMonitors)-1, correctListMonitor, false, this->textBoxFilePropVis->Text, gcnew array<Color^>{},this->textBoxFacColorCorOrient->Text,widthString,heightString,checked};
 			this->visualizator = gcnew System::Threading::Thread(gcnew System::Threading::ParameterizedThreadStart(&MainForm::launchVisMode));
 			this->visualizator->Start(listParams);
 		}
@@ -1029,7 +1033,6 @@ private: System::Windows::Forms::CheckBox^ checkBoxVideoMode;
 			// 
 			// panel5
 			// 
-			this->panel5->Anchor = System::Windows::Forms::AnchorStyles::Top;
 			this->panel5->Controls->Add(this->checkBoxResolution);
 			this->panel5->Location = System::Drawing::Point(12, 120);
 			this->panel5->Name = L"panel5";
@@ -1049,7 +1052,6 @@ private: System::Windows::Forms::CheckBox^ checkBoxVideoMode;
 			// 
 			// panel4
 			// 
-			this->panel4->Anchor = System::Windows::Forms::AnchorStyles::Top;
 			this->panel4->Controls->Add(this->checkBoxVideoMode);
 			this->panel4->Location = System::Drawing::Point(297, 120);
 			this->panel4->Name = L"panel4";
@@ -1276,6 +1278,7 @@ private: System::Windows::Forms::CheckBox^ checkBoxVideoMode;
 		this->staticButtonLaunchVis = this->buttonLaunchVis;
 		this->staticButtonStopVis = this->buttonStopVis;
 		this->staticLabelError = this->labelError;
+		this->staticCheckBoxVideoMode = this->checkBoxVideoMode;
 		this->InitializeComponentsWithMonitors();
 	}
 	private: System::Void label1_Click(System::Object^ sender, System::EventArgs^ e) {
