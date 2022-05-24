@@ -133,6 +133,11 @@ private: System::Windows::Forms::Panel^ panel4;
 private: System::Windows::Forms::Panel^ panel5;
 private: System::Windows::Forms::CheckBox^ checkBoxResolution;
 private: System::Windows::Forms::CheckBox^ checkBoxVideoMode;
+private: System::Windows::Forms::Panel^ panel6;
+private: System::Windows::Forms::TextBox^ textBoxNbOfFramesDisplayed;
+
+private: System::Windows::Forms::Label^ labelNbOfFramesDisplayed;
+
 
 
 
@@ -192,6 +197,7 @@ private: System::Windows::Forms::CheckBox^ checkBoxVideoMode;
 
 			//this->textBoxFacColorCorOrient->Text = ((*nbMonitors)-1).ToString();
 			this->textBoxFacColorCorOrient->Text = "1";
+			this->textBoxNbOfFramesDisplayed->Text = "179";
 			this->buttonApplyChangeVis->Visible = false;
 			this->checkBoxResolution->Checked = true;
 			this->textBoxHeightSizeVis->Enabled = false;
@@ -536,6 +542,9 @@ private: System::Windows::Forms::CheckBox^ checkBoxVideoMode;
 			this->buttonFilePropVis = (gcnew System::Windows::Forms::Button());
 			this->labelFilePropVis = (gcnew System::Windows::Forms::Label());
 			this->labelVisualizator = (gcnew System::Windows::Forms::Label());
+			this->panel6 = (gcnew System::Windows::Forms::Panel());
+			this->textBoxNbOfFramesDisplayed = (gcnew System::Windows::Forms::TextBox());
+			this->labelNbOfFramesDisplayed = (gcnew System::Windows::Forms::Label());
 			this->menuStrip->SuspendLayout();
 			this->panelHandleMonitor->SuspendLayout();
 			this->panelDebug->SuspendLayout();
@@ -553,6 +562,7 @@ private: System::Windows::Forms::CheckBox^ checkBoxVideoMode;
 			this->panel3->SuspendLayout();
 			this->panelVisFacColCorOrient->SuspendLayout();
 			this->panelFilePropVis->SuspendLayout();
+			this->panel6->SuspendLayout();
 			this->SuspendLayout();
 			// 
 			// listMonitorsLabel
@@ -574,7 +584,6 @@ private: System::Windows::Forms::CheckBox^ checkBoxVideoMode;
 			this->labelMonitors->Size = System::Drawing::Size(74, 20);
 			this->labelMonitors->TabIndex = 3;
 			this->labelMonitors->Text = L"Monitors";
-			this->labelMonitors->Click += gcnew System::EventHandler(this, &MainForm::label1_Click);
 			// 
 			// menuStrip
 			// 
@@ -1017,6 +1026,7 @@ private: System::Windows::Forms::CheckBox^ checkBoxVideoMode;
 			// 
 			this->panelVis->Anchor = static_cast<System::Windows::Forms::AnchorStyles>(((System::Windows::Forms::AnchorStyles::Top | System::Windows::Forms::AnchorStyles::Left)
 				| System::Windows::Forms::AnchorStyles::Right));
+			this->panelVis->Controls->Add(this->panel6);
 			this->panelVis->Controls->Add(this->panel5);
 			this->panelVis->Controls->Add(this->panel4);
 			this->panelVis->Controls->Add(this->panel3);
@@ -1120,14 +1130,14 @@ private: System::Windows::Forms::CheckBox^ checkBoxVideoMode;
 			this->panelVisFacColCorOrient->Controls->Add(this->labelFactorColorCorOrient);
 			this->panelVisFacColCorOrient->Location = System::Drawing::Point(8, 79);
 			this->panelVisFacColCorOrient->Name = L"panelVisFacColCorOrient";
-			this->panelVisFacColCorOrient->Size = System::Drawing::Size(284, 28);
+			this->panelVisFacColCorOrient->Size = System::Drawing::Size(203, 28);
 			this->panelVisFacColCorOrient->TabIndex = 7;
 			// 
 			// textBoxFacColorCorOrient
 			// 
 			this->textBoxFacColorCorOrient->Location = System::Drawing::Point(176, 4);
 			this->textBoxFacColorCorOrient->Name = L"textBoxFacColorCorOrient";
-			this->textBoxFacColorCorOrient->Size = System::Drawing::Size(100, 20);
+			this->textBoxFacColorCorOrient->Size = System::Drawing::Size(25, 20);
 			this->textBoxFacColorCorOrient->TabIndex = 1;
 			this->textBoxFacColorCorOrient->TextChanged += gcnew System::EventHandler(this, &MainForm::textBoxFacColorCorOrient_TextChanged);
 			// 
@@ -1211,7 +1221,32 @@ private: System::Windows::Forms::CheckBox^ checkBoxVideoMode;
 			this->labelVisualizator->Size = System::Drawing::Size(97, 20);
 			this->labelVisualizator->TabIndex = 0;
 			this->labelVisualizator->Text = L"Visualizator";
-			this->labelVisualizator->Click += gcnew System::EventHandler(this, &MainForm::label3_Click);
+			// 
+			// panel6
+			// 
+			this->panel6->Controls->Add(this->textBoxNbOfFramesDisplayed);
+			this->panel6->Controls->Add(this->labelNbOfFramesDisplayed);
+			this->panel6->Location = System::Drawing::Point(217, 79);
+			this->panel6->Name = L"panel6";
+			this->panel6->Size = System::Drawing::Size(182, 28);
+			this->panel6->TabIndex = 8;
+			// 
+			// textBoxNbOfFramesDisplayed
+			// 
+			this->textBoxNbOfFramesDisplayed->Location = System::Drawing::Point(129, 4);
+			this->textBoxNbOfFramesDisplayed->Name = L"textBoxNbOfFramesDisplayed";
+			this->textBoxNbOfFramesDisplayed->Size = System::Drawing::Size(43, 20);
+			this->textBoxNbOfFramesDisplayed->TabIndex = 1;
+			this->textBoxNbOfFramesDisplayed->TextChanged += gcnew System::EventHandler(this, &MainForm::textBoxNbOfFramesDisplayed_TextChanged);
+			// 
+			// labelNbOfFramesDisplayed
+			// 
+			this->labelNbOfFramesDisplayed->AutoSize = true;
+			this->labelNbOfFramesDisplayed->Location = System::Drawing::Point(4, 7);
+			this->labelNbOfFramesDisplayed->Name = L"labelNbOfFramesDisplayed";
+			this->labelNbOfFramesDisplayed->Size = System::Drawing::Size(120, 13);
+			this->labelNbOfFramesDisplayed->TabIndex = 0;
+			this->labelNbOfFramesDisplayed->Text = L"Nb of Frames displayed:";
 			// 
 			// MainForm
 			// 
@@ -1265,6 +1300,8 @@ private: System::Windows::Forms::CheckBox^ checkBoxVideoMode;
 			this->panelVisFacColCorOrient->PerformLayout();
 			this->panelFilePropVis->ResumeLayout(false);
 			this->panelFilePropVis->PerformLayout();
+			this->panel6->ResumeLayout(false);
+			this->panel6->PerformLayout();
 			this->ResumeLayout(false);
 			this->PerformLayout();
 
@@ -1281,8 +1318,7 @@ private: System::Windows::Forms::CheckBox^ checkBoxVideoMode;
 		this->staticCheckBoxVideoMode = this->checkBoxVideoMode;
 		this->InitializeComponentsWithMonitors();
 	}
-	private: System::Void label1_Click(System::Object^ sender, System::EventArgs^ e) {
-	}
+
 	private: System::Void quitterToolStripMenuItem_Click(System::Object^ sender, System::EventArgs^ e) {
 		this->~MainForm();
 	}
@@ -1363,8 +1399,7 @@ private: System::Void buttonStopDebug_Click(System::Object^ sender, System::Even
 		this->buttonStopDebug->Visible = false;
 	}
 }
-private: System::Void label3_Click(System::Object^ sender, System::EventArgs^ e) {
-}
+
 private: System::Void buttonFilePropVis_Click(System::Object^ sender, System::EventArgs^ e) {
 	System::Windows::Forms::DialogResult result = this->openFileDialogFP->ShowDialog();
 	if (result == System::Windows::Forms::DialogResult::OK) {
@@ -1420,6 +1455,16 @@ private: System::Void buttonApplyChangeVis_Click(System::Object^ sender, System:
 			height = Convert::ToInt64(this->textBoxHeightSizeVis->Text);
 		}
 		this->vis->setWindowsSize(width, height);
+		if (checkBoxVideoMode->Checked) {
+			int framesDisplayed = 60;
+			if (sizeof(int) == 4) {
+				framesDisplayed = Convert::ToInt32(this->textBoxNbOfFramesDisplayed->Text);
+			}
+			else {
+				framesDisplayed = Convert::ToInt64(this->textBoxNbOfFramesDisplayed->Text);
+			}
+			vis->setNbOfFramesDisplayed(framesDisplayed);
+		}
 	}
 	else {
 		this->printError("Impossible to apply change if no visualization started...");
@@ -1456,6 +1501,11 @@ private: System::Void checkBoxResolution_CheckedChanged(System::Object^ sender, 
 		textBoxWidthSizeVis->Text = "";
 	}
 	if(vis != NULL)
+		this->buttonApplyChangeVis->Visible = true;
+}
+
+private: System::Void textBoxNbOfFramesDisplayed_TextChanged(System::Object^ sender, System::EventArgs^ e) {
+	if (vis != NULL)
 		this->buttonApplyChangeVis->Visible = true;
 }
 };

@@ -58,7 +58,7 @@ void Visualizator::buildLayer(int nbMonitor) {
 }
 
 void Visualizator::loadTexture(int nbMonitor) {
-	this->texImg[nbMonitor] = Mat();
+	//this->texImg[getIndexInTexImg(nbMonitor)] = Mat();
 	glGenTextures(1, texture + nbMonitor);
 	glBindTexture(GL_TEXTURE_2D, texture[nbMonitor]);
 	// GL, by default, expects rows of pixels to be padded to a multiple of 4 bytes.A 1366 wide texture with 1 byte or 3 byte wide pixels, will not be naturally 4 byte aligned.
@@ -77,25 +77,33 @@ void Visualizator::loadTexture(int nbMonitor) {
 	}
 }
 
+int Visualizator::getIndexInTexImg(int nbMonitor) {
+	return (nbOfFramesCanBeLoaded == 0) ? nbMonitor : nbMonitor + nbMonitors * isVideoMode * (frameVideo%nbOfFramesCanBeLoaded);
+}
+
 void Visualizator::applyTexture(int nbMonitor) {
-	//int idxForTexImg = nbMonitor*(1 + isVideoMode*frameVideo);
-	if (((!texImg[nbMonitor].empty()) && this->Frame > 1) || isVideoMode) {
-		this->texImg[nbMonitor].release();
+	int idxForTexImg = getIndexInTexImg(nbMonitor);
+	if ( !texImg[idxForTexImg].empty() && 
+		(this->Frame > 1 || 
+			(idxForTexImg == 0 && (frameVideo+nbMonitor) != 0))) {
+		for (int i = 0; i < nbMonitors * (1 + isVideoMode * nbOfFramesCanBeLoaded); i++) {
+			this->texImg[i].release();
+		}
 	}
 
 	if (this->isDebuggingMode) {
 		if (this->colorChosenList == NULL)
 			throw std::invalid_argument("Impossible to debug with no chosen color...");
-		this->texImg[nbMonitor] = Mat(500, 500, CV_8UC3, Scalar(colorChosenList[nbMonitor][0], colorChosenList[nbMonitor][1], colorChosenList[nbMonitor][2]));
+		this->texImg[idxForTexImg] = Mat(500, 500, CV_8UC3, Scalar(colorChosenList[nbMonitor][0], colorChosenList[nbMonitor][1], colorChosenList[nbMonitor][2]));
 	}
 	else {
-		if (this->Frame > 1 || texImg[nbMonitor].empty()) {
+		if (this->Frame > 1 || texImg[idxForTexImg].empty()) {
 			char* pathToLoad = this->constructStringPath(nbMonitor);
-			texImg[nbMonitor] =  imread(pathToLoad, IMREAD_COLOR);
+			texImg[idxForTexImg] =  imread(pathToLoad, IMREAD_COLOR);
 			delete(pathToLoad);
-			if (!texImg[nbMonitor].empty()) {
-				flip(texImg[nbMonitor], texImg[nbMonitor], 0);
-				cvtColor(texImg[nbMonitor], texImg[nbMonitor], COLOR_BGR2RGB);
+			if (!texImg[idxForTexImg].empty()) {
+				flip(texImg[idxForTexImg], texImg[idxForTexImg], 0);
+				cvtColor(texImg[idxForTexImg], texImg[idxForTexImg], COLOR_BGR2RGB);
 			}
 			else {
 				//Error load
@@ -110,7 +118,7 @@ void Visualizator::applyTexture(int nbMonitor) {
 		}
 	}
 	glBindTexture(GL_TEXTURE_2D, texture[nbMonitor]);
-	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texImg[nbMonitor].size[1], texImg[nbMonitor].size[0], 0, GL_RGB, GL_UNSIGNED_BYTE, texImg[nbMonitor].data);
+	glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, texImg[idxForTexImg].size[1], texImg[idxForTexImg].size[0], 0, GL_RGB, GL_UNSIGNED_BYTE, texImg[idxForTexImg].data);
 	glGenerateMipmap(GL_TEXTURE_2D);
 }
 
@@ -350,9 +358,17 @@ void Visualizator::initEnv() {
 	EBO = new unsigned int[this->nbMonitors];
 
 	texture = new unsigned int[this->nbMonitors];
+	nbOfFramesCanBeLoaded = (framesVideo < nbOfFramesCanBeLoaded) ? framesVideo : nbOfFramesCanBeLoaded;
 	this->texImg = new Mat[this->nbMonitors *(1+nbOfFramesCanBeLoaded*isVideoMode)];
 }
 
+
+void Visualizator::setNbOfFramesDisplayed(int framesDisplayed) {
+	this->nbOfFramesCanBeLoaded = framesDisplayed;
+	delete[] texImg;
+	nbOfFramesCanBeLoaded = (framesVideo < nbOfFramesCanBeLoaded) ? framesVideo : nbOfFramesCanBeLoaded;
+	this->texImg = new Mat[this->nbMonitors * (1 + nbOfFramesCanBeLoaded * isVideoMode)];
+}
 
 void Visualizator::setColor(double** newColorList) {
 	if (!isDebuggingMode)

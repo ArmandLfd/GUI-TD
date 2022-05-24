@@ -22,6 +22,7 @@ public:
 	void launchSim();
 	void setFactorRmAdd(double newFact);
 	void setWindowsSize(int width, int height);
+	void setNbOfFramesDisplayed(int framesDisplayed);
 private:
 	void buildLayer(int nbMonitor);
 	void initEnv();
@@ -35,6 +36,7 @@ private:
 	void setColor(double** newColorList);
 	void makeContext(int nbMonitor);
 	void printFps(int* frameCount, double* previousTime);
+	int getIndexInTexImg(int nbMonitor);
 
 	char* pathFileProp;
 	char* pathToFrameDir;
@@ -59,7 +61,7 @@ private:
 	Mat* texImg;
 	unsigned int* VBO, * VAO, * EBO;
 
-	const int nbOfFramesCanBeLoaded = 6;
+	int nbOfFramesCanBeLoaded = 179;
 	bool isDebuggingMode;
 
 	GLchar* vertexShaderSource = "#version 330 core\n"
