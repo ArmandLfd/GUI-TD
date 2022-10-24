@@ -16,6 +16,8 @@ Visualizator::Visualizator(int nbOfMonitors,GLFWmonitor** listMonitors,bool isDe
 	this->widthWin = width;
 	this->heightWin = height;
 	this->isVideoMode = isVideoMode;
+
+	mustRun = true;
 }
 
 void Visualizator::buildLayer(int nbMonitor) {
@@ -175,7 +177,7 @@ void Visualizator::setFactorRmAdd(double newFact) {
 }
 
 void Visualizator::makeContext(int nbMonitor) {
-		glfwMakeContextCurrent(windows[nbMonitor]);
+	glfwMakeContextCurrent(windows[nbMonitor]);
 }
 
 void Visualizator::printFps(int* frameCount,double* previousTime) {
@@ -190,6 +192,10 @@ void Visualizator::printFps(int* frameCount,double* previousTime) {
 		*frameCount = 0;
 		*previousTime = currentTime;
 	}
+}
+
+void Visualizator::setRunFalse() {
+	mustRun = false;
 }
 
 void Visualizator::launchSim() {
@@ -215,7 +221,7 @@ void Visualizator::launchSim() {
 
 	int frameCount = 0;
 	double initTime = glfwGetTime();
-	while (true)
+	while (mustRun)
 	{
 		//Rendering
 		glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
@@ -240,6 +246,7 @@ void Visualizator::launchSim() {
 		//Events
 		glfwPollEvents();
 	}
+	this->~Visualizator();
 }
 
 Visualizator::~Visualizator() {
@@ -326,11 +333,13 @@ void Visualizator::initEnv() {
 		int height = (heightWin >= 0) ? heightWin : mode->height;
 		resolutionImage = (widthWin == -2 || heightWin == -2);
 
+		printf("Name of the screen: %s\n", glfwGetMonitorName(listMonitors[i]));
+
 		try{
 			if (i >= 1)
-				this->windows[i] = glfwCreateWindow(mode->width,mode->height, "Balec du nom", this->listMonitors[i], this->windows[i - 1]);
+				this->windows[i] = glfwCreateWindow(mode->width,mode->height, glfwGetMonitorName(listMonitors[i]), this->listMonitors[i], this->windows[i - 1]);
 			else
-				this->windows[i] = glfwCreateWindow(mode->width, mode->height, "Balec du nom", this->listMonitors[i], NULL);
+				this->windows[i] = glfwCreateWindow(mode->width, mode->height, glfwGetMonitorName(listMonitors[i]), this->listMonitors[i], NULL);
 		}
 		catch (Exception e) {
 			printf(e.what());

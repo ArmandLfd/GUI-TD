@@ -23,6 +23,7 @@ public:
 	void setFactorRmAdd(double newFact);
 	void setWindowsSize(int width, int height);
 	void setNbOfFramesDisplayed(int framesDisplayed);
+	void setRunFalse();
 private:
 	void buildLayer(int nbMonitor);
 	void initEnv();
@@ -83,4 +84,6 @@ private:
 		"{\n"
 		"	FragColor = (1.0/removeAdditive)*texture(tex, textCoords);\n"
 		"}\n\0";
+
+	bool mustRun;
 };

@@ -297,6 +297,9 @@ private: System::Windows::Forms::Label^ labelNbOfFramesDisplayed;
 				printErrorDelegate^ action = gcnew printErrorDelegate(&MainForm::printError);
 				MainForm::staticLabelError->Invoke(action, gcnew array<Object^> {gcnew System::String(e.what())});
 			}
+			catch (System::Threading::ThreadAbortException ^e) {
+				printError("");
+			}
 			displayButtonLaunchVisDelegate^ actionLaunchVis = gcnew displayButtonLaunchVisDelegate(&MainForm::displayButtonLaunchVis);
 			MainForm::staticButtonLaunchVis->Invoke(actionLaunchVis, gcnew array<Object^> {System::Boolean(true)});
 			displayButtonStopVisDelegate^ actionStopVis = gcnew displayButtonStopVisDelegate(&MainForm::displayButtonStopVis);
@@ -449,8 +452,16 @@ private: System::Windows::Forms::Label^ labelNbOfFramesDisplayed;
 		}
 
 		void finishVis() {
-			this->visualizator->Abort();
-			delete vis;
+			/*
+			try {
+				this->visualizator->Abort();
+			}
+			catch (System::Exception ^e) {
+				printError("");
+			}*/
+			vis->setRunFalse();
+			//visualizator->Join();
+			//delete vis;
 			vis = NULL;
 		}
 
